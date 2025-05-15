@@ -26,3 +26,5 @@ SELECT g.name, g.beschreibung, g.preis, g.allergene, g.hinweise
 FROM speiseplan s
 JOIN gerichte g ON s.gericht_id = g.id
 WHERE s.datum = '2025-05-16';
+
+
