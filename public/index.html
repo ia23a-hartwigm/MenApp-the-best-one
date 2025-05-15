@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+<h1 id="headline">däfovkn</h1>
+<button id="fetchButton">Get Data</button>
+
+<script>
+    document.getElementById('fetchButton').addEventListener('click', async () => {
+        try {
+            const response = await fetch('api/test');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.text(); // or .json() if it's JSON
+            document.getElementById('headline').textContent = data;
+        } catch (error) {
+            console.error('Fetch error:', error);
+            document.getElementById('headline').textContent = 'Error fetching data';
+        }
+    });
+</script>
+</body>
+</html>
