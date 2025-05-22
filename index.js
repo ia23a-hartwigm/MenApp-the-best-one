@@ -24,7 +24,6 @@ app.get('/api/testDB', async (req, res) => {
 
 app.get('/api/menu/id/:id', async (req, res) => {
     try {
-        console.log(req.params.id);
         const menu = await dbCon.getMenuByDay(req.params.id);
         res.json(menu);
     } catch (error) {
@@ -45,15 +44,19 @@ app.get('/api/test', async (req, res) => {
 })
 
 
-app.get('/api/menu/week/:startDate', async (req, res) => {
+app.get('/api/menu/week/:startDate?', async (req, res) => {
     try {
-        const menu = await dbCon.getMenuForWeek(req.params.startDate);
+        let startDate = req.params.startDate;
+        if (!startDate) {
+            const today = new Date();
+            startDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
+        }
+        const menu = await dbCon.getMenuForWeek(startDate);
         res.json(menu);
     } catch (error) {
         res.status(500).json({ success: false, error: 'Fehler beim Abrufen des Wochenmenüs' });
     }
 });
-
 // Server startup
 
 app.listen(port, () => {
