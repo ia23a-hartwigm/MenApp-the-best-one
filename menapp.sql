@@ -1,30 +1,16 @@
-CREATE TABLE gerichte (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    beschreibung TEXT,
-    preis DECIMAL(5,2) NOT NULL,
-    allergene SET(
-        'Gluten', 'Ei', 'Milch', 'Soja', 'Nüsse',
-        'Sellerie', 'Fisch', 'Krebstiere', 'Sesam',
-        'Lupinen', 'Senf', 'Schwefeldioxid'
-    ),
-    hinweise VARCHAR(255)
+use `m426menappsql1`;
+
+drop table gerichte;
+create TABLE gerichte (
+    ID int PRIMARY KEY auto_increment,
+    Name varchar(100) NOT NULL,
+    Beschreibung varchar(100),
+    Preis DECIMAL(5,2),
+    Allergene varchar(100),
+    Hinweise varchar(100),
+    Tag DATE NOT NULL
 );
 
-
-CREATE TABLE speiseplan (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    datum DATE NOT NULL,
-    gericht_id INT NOT NULL,
-    FOREIGN KEY (gericht_id) REFERENCES gerichte(id) ON DELETE CASCADE
-);
-
-
-
-für alle an einem tag
-SELECT g.name, g.beschreibung, g.preis, g.allergene, g.hinweise
-FROM speiseplan s
-JOIN gerichte g ON s.gericht_id = g.id
-WHERE s.datum = '2025-05-16';
-
-
+INSERT INTO gerichte (name, beschreibung, preis, allergene, hinweise, tag) VALUES
+('Spaghetti Bolognese', 'Mit Rinderhackfleisch und Tomatensauce', 5.50, 'Gluten, Sellerie', '', '2025-05-22'),
+('Gemüse-Curry', 'Mit Kokosmilch und Basmatireis', 4.80, '', 'vegan', '2025-05-22');
