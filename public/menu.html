@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Speiseplan</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<h1>Speiseplan der Woche</h1>
+<div id="menu">Lade Daten…</div>
+
+<!-- Modal -->
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <span id="closeModal" class="close">&times;</span>
+    <div id="modal-body">Lade…</div>
+  </div>
+</div>
+
+<script>
+    async function loadMenu() {
+        const menuDiv = document.getElementById('menu');
+        try {
+            const response = await fetch('/api/menu/week');
+            const data = await response.json();
+
+            // Group meals by date string (YYYY-MM-DD)
+            const groupedByDate = {};
+            data.forEach(meal => {
+                const dateKey = meal.Tag.split('T')[0];
+                if (!groupedByDate[dateKey]) groupedByDate[dateKey] = [];
+                groupedByDate[dateKey].push(meal);
+            });
+
+            // Sort dates ascending
+            const sortedDates = Object.keys(groupedByDate).sort((a,b) => new Date(a) - new Date(b));
+
+            menuDiv.innerHTML = '';
+
+            const weekdaysDe = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+
+            for (const dateStr of sortedDates) {
+                const date = new Date(dateStr);
+                const weekdayName = weekdaysDe[date.getDay()] || dateStr;
+
+                // Format date as dd.mm.yyyy
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                const formattedDate = `${day}.${month}.${year}`;
+
+                const section = document.createElement('div');
+                section.className = 'day-section';
+                section.innerHTML = `<h2>${weekdayName} (${formattedDate})</h2>`;
+
+                groupedByDate[dateStr].forEach(meal => {
+                    const mealEl = document.createElement('div');
+                    mealEl.className = 'meal';
+                    mealEl.style.cursor = 'pointer';
+                    mealEl.setAttribute('data-id', meal.ID);
+                    mealEl.addEventListener('click', () => showModal(meal.ID));
+
+                    mealEl.innerHTML = `
+            <div class="meal-details">
+              <strong>${meal.Name}</strong><br>
+              <span>${meal.Beschreibung}</span><br>
+              <small>Allergene: ${meal.Allergene || 'Keine'}</small><br>
+              <div class="notes">${meal.Hinweise || ''}</div>
+            </div>
+            <div class="meal-price">${meal.Preis} €</div>
+          `;
+                    section.appendChild(mealEl);
+                });
+
+                menuDiv.appendChild(section);
+            }
+        } catch (err) {
+            menuDiv.innerHTML = `<p>Fehler beim Laden der Datei: ${err.message}</p>`;
+            console.error(err);
+        }
+    }
+
+    async function showModal(mealId) {
+        const modal = document.getElementById('modal');
+        const modalBody = document.getElementById('modal-body');
+
+        modal.classList.remove('hidden');
+        modalBody.innerHTML = 'Lade Details…';
+
+        try {
+            const res = await fetch(`/api/menu/id/${mealId}`);
+            const data = await res.json();
+
+            if (!Array.isArray(data) || data.length === 0) {
+                modalBody.innerHTML = 'Gericht nicht gefunden.';
+                return;
+            }
+
+            const meal = data[0];
+
+            const allergens = meal.Allergene ? meal.Allergene.split(',').map(a => a.trim()) : [];
+            const notes = meal.Hinweise ? meal.Hinweise.split(',').map(n => n.trim()) : [];
+
+            modalBody.innerHTML = `
+        <h2>${meal.Name}</h2>
+        <p>${meal.Beschreibung}</p>
+        <p><strong>Preis:</strong> ${meal.Preis} €</p>
+        <p><strong>Allergene:</strong> ${allergens.join(', ') || 'Keine'}</p>
+        <p><strong>Hinweise:</strong> ${notes.join(', ') || 'Keine'}</p>
+      `;
+        } catch (err) {
+            modalBody.innerHTML = 'Fehler beim Laden.';
+            console.error(err);
+        }
+    }
+
+    document.getElementById('closeModal').addEventListener('click', () => {
+        document.getElementById('modal').classList.add('hidden');
+    });
+
+    window.addEventListener('click', (event) => {
+        const modal = document.getElementById('modal');
+        if (event.target === modal) {
+            modal.classList.add('hidden');
+        }
+    });
+
+    loadMenu();
+</script>
+</body>
+</html>
