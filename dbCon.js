@@ -1,6 +1,8 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
+
+
 // Create a connection pool for better performance and connection management
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
@@ -24,11 +26,32 @@ async function getTest() {
 }
 
 
+async function getMenuById(id) {
+    try {
+        return await executeQuery('SELECT * FROM gerichte WHERE ID = ?', [id]);
+    } catch (error) {
+        console.error('Error fetching menu by day:', error);
+        throw error;
+    }
+}
+
+async function getMenuForWeek(startDate) {
+    try {
+        return await executeQuery(
+            'SELECT * FROM gerichte WHERE Tag >= ? AND Tag < DATE_ADD(?, INTERVAL 7 DAY) ORDER BY Tag ASC',
+            [startDate, startDate]
+        );
+    } catch (error) {
+        console.error('Error fetching menu for week:', error);
+        throw error;
+    }
+}
 
 
-// Export the database functions
 module.exports = {
-    getTest
+    getTest,
+    getMenuByDay: getMenuById,
+    getMenuForWeek
 };
 
 async function executeQuery(sql, params = []) {
@@ -40,3 +63,6 @@ async function executeQuery(sql, params = []) {
         throw error; // Re-throw to allow handling in the calling function
     }
 }
+
+
+// dbCon.js
