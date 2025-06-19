@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Speiseplan</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Speiseplan</title>
+    <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 <h1 id="headerTitle">Speiseplan der Woche</h1>
@@ -12,10 +12,10 @@
 
 <!-- Modal -->
 <div id="modal" class="modal hidden">
-  <div class="modal-content">
-    <span id="closeModal" class="close">&times;</span>
-    <div id="modal-body">Lade…</div>
-  </div>
+    <div class="modal-content">
+        <span id="closeModal" class="close">&times;</span>
+        <div id="modal-body">Lade…</div>
+    </div>
 </div>
 
 <script>
@@ -34,7 +34,7 @@
             });
 
             // Sort dates ascending
-            const sortedDates = Object.keys(groupedByDate).sort((a,b) => new Date(a) - new Date(b));
+            const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(a) - new Date(b));
 
             menuDiv.innerHTML = '';
 
@@ -62,14 +62,19 @@
                     mealEl.addEventListener('click', () => showModal(meal.ID));
 
                     mealEl.innerHTML = `
-            <div class="meal-details">
-              <strong>${meal.Name}</strong><br>
-              <span>${meal.Beschreibung}</span><br>
-              <small>Allergene: ${meal.Allergene || 'Keine'}</small><br>
-              <div class="notes">${meal.Hinweise || ''}</div>
-            </div>
-            <div class="meal-price">${meal.Preis} €</div>
-          `;
+  <div class="meal-details">
+    <strong>${meal.Name}</strong><br>
+    <span>${meal.Beschreibung}</span><br>
+    <small>Allergene: ${meal.Allergene || 'Keine'}</small><br>
+    <div class="notes">${meal.Hinweise || ''}</div>
+  </div>
+  <div class="meal-price">${meal.Preis} €</div>
+  <br>
+  <div class="order-meal">
+    <button class="order-button" onclick="orderMeal(${meal.ID}, 1); event.stopPropagation();">Bestellen</button>
+  </div>
+`;
+
                     section.appendChild(mealEl);
                 });
 
@@ -103,12 +108,17 @@
             const notes = meal.Hinweise ? meal.Hinweise.split(',').map(n => n.trim()) : [];
 
             modalBody.innerHTML = `
-        <h2>${meal.Name}</h2>
-        <p>${meal.Beschreibung}</p>
-        <p><strong>Preis:</strong> ${meal.Preis} €</p>
-        <p><strong>Allergene:</strong> ${allergens.join(', ') || 'Keine'}</p>
-        <p><strong>Hinweise:</strong> ${notes.join(', ') || 'Keine'}</p>
-      `;
+  <h2>${meal.Name}</h2>
+  <p>${meal.Beschreibung}</p>
+  <p><strong>Preis:</strong> ${meal.Preis} €</p>
+  <p><strong>Allergene:</strong> ${allergens.join(', ') || 'Keine'}</p>
+  <p><strong>Hinweise:</strong> ${notes.join(', ') || 'Keine'}</p>
+  <div class="modal-order">
+    <input type="number" id="order-quantity" min="1" value="1" class="quantity-input"/>
+    <button class="order-button modal-order-button" onclick="orderMeal(${meal.ID})">In den Warenkorb</button>
+  </div>
+`;
+
         } catch (err) {
             modalBody.innerHTML = 'Fehler beim Laden.';
             console.error(err);
@@ -128,7 +138,7 @@
 
     async function updateHeaderWithUsername() {
         try {
-            const res = await fetch('/api/user/name', { credentials: 'include' });
+            const res = await fetch('/api/user/name', {credentials: 'include'});
             if (!res.ok) return;
 
             const data = await res.json();
@@ -140,10 +150,87 @@
             console.error('Fehler beim Abrufen des Benutzernamens:', err);
         }
     }
+    let currentUserId = null;
 
     updateHeaderWithUsername();
 
     loadMenu();
+    checkSession();
+
+    async function orderMeal(mealId, quantity = null) {
+        // Wenn keine Menge übergeben wurde, aus dem Input-Feld lesen oder 1 verwenden
+        const orderQuantity = quantity ||
+            (document.getElementById('order-quantity') ?
+                document.getElementById('order-quantity').value : 1);
+
+        try {
+            // API-Aufruf zum Hinzufügen zum Warenkorb
+            const response = await fetch('/api/kart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    userId: currentUserId,
+                    menuItemId: mealId,
+                    menge: orderQuantity
+                })
+            });
+
+            // Überprüfen, ob die Antwort erfolgreich war
+            if (!response.ok) {
+                throw new Error(`Server antwortet mit Status ${response.status}`);
+            }
+
+            // Content-Type prüfen
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const result = await response.json();
+                if (result.success) {
+                    alert(`${orderQuantity}x Gericht hinzugefügt!`);
+                } else {
+                    throw new Error(result.message || 'Unbekannter Fehler');
+                }
+            } else {
+                // Falls kein JSON zurückkommt, Textantwort verarbeiten
+                const text = await response.text();
+                if (response.ok) {
+                    alert(`${orderQuantity}x Gericht hinzugefügt!`);
+                } else {
+                    throw new Error(`Serverantwort: ${text.substring(0, 100)}`);
+                }
+            }
+
+            // Modal schließen, falls es geöffnet ist
+            const modal = document.getElementById('modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                modal.classList.add('hidden');
+            }
+        } catch (err) {
+            alert(`Fehler beim Hinzufügen zum Warenkorb: ${err.message}`);
+            console.error(err);
+        }
+    }
+
+    async function checkSession() {
+        try {
+            const response = await fetch('/api/session', {credentials: 'include'});
+            if (!response.ok) throw new Error('Fehler beim Abrufen der Session');
+
+            const data = await response.json();
+            if (data.loggedIn) {
+                currentUserId = data.userId;
+                console.log('Benutzer angemeldet mit ID:', currentUserId);
+            } else {
+                console.log('Kein Benutzer angemeldet');
+                // Optional: Umleitung zur Login-Seite
+                // window.location.href = '/login.html';
+            }
+        } catch (err) {
+            console.error('Session-Fehler:', err);
+        }
+    }
+
 </script>
 </body>
 </html>
