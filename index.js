@@ -199,3 +199,19 @@ app.get('/api/warenkorb', async (req, res) => {
     }
 });
 
+app.get('/api/bestellungen', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, message: 'Nicht eingeloggt' });
+    }
+
+    try {
+        const userId = req.session.userId;
+        const result = await dbCon.getBestellungByUser(userId);
+        res.json(result); // Array von { gerichtName, menge }
+    } catch (error) {
+        console.error('Fehler beim Abrufen des Warenkorbs:', error);
+        res.status(500).json({ success: false, message: 'Serverfehler beim Abrufen des Warenkorbs' });
+    }
+});
+
+

@@ -55,6 +55,19 @@
     </tbody>
 </table>
 
+<h1>🛒 Meine Bestellungen</h1>
+
+<table id="bestellungTabelle">
+    <thead>
+    <tr>
+        <th>Gericht</th>
+        <th>Menge</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- JavaScript befüllt hier -->
+    </tbody>
+</table>
 <script>
     // Daten aus der DB holen
     async function ladeWarenkorb() {
@@ -97,7 +110,50 @@
         }
     }
 
+
+    async function ladeBestellung() {
+        try {
+            const sessionRes = await fetch('/api/session', { credentials: 'include' });
+            const sessionData = await sessionRes.json();
+
+            if (!sessionData.loggedIn || !sessionData.userId) {
+                document.body.innerHTML = '<p style="text-align:center; color:red;">Bitte zuerst einloggen.</p>';
+                return;
+            }
+
+            const warenkorbRes = await fetch('/api/bestellungen', {
+                credentials: 'include'
+            });
+
+            if (!warenkorbRes.ok) {
+                throw new Error('Fehler beim Laden des Warenkorbs');
+            }
+
+            const daten = await warenkorbRes.json();
+            const tbody = document.querySelector("#bestellungTabelle tbody");
+
+            if (daten.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;">Keine offenen Bestellungen.</td></tr>';
+                return;
+            }
+
+            daten.forEach(eintrag => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+          <td>${eintrag.gerichtName}</td>
+          <td>${eintrag.menge}</td>
+        `;
+                tbody.appendChild(tr);
+            });
+        } catch (err) {
+            console.error(err);
+            document.body.innerHTML = '<p style="text-align:center; color:red;">Fehler beim Abrufen der Daten.</p>';
+        }
+    }
+
+
     window.addEventListener("DOMContentLoaded", ladeWarenkorb);
+    window.addEventListener("DOMContentLoaded", ladeBestellung);
 </script>
 
 </body>
