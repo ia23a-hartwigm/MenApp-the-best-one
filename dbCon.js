@@ -48,11 +48,32 @@ async function getMenuForWeek(startDate) {
     }
 }
 
+async function getUserByEmail(email) {
+    const [rows] = await pool.query('SELECT * FROM users WHERE Email = ?', [email]);
+    return rows[0];
+}
+
+async function getUserById(id) {
+    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+    return rows[0];
+}
+
+async function createUser(name, email, passwort) {
+    await pool.query(
+        'INSERT INTO users (Name, Email, Passwort) VALUES (?, ?, ?)',
+        [name, email, passwort]
+    );
+}
+
 
 module.exports = {
     getTest,
     getMenuByDay: getMenuById,
-    getMenuForWeek
+    getMenuForWeek,
+    getUserByEmail,
+    getUserById,
+    createUser,
+
 };
 
 async function executeQuery(sql, params = []) {

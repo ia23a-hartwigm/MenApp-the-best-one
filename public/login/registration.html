@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registration</title><!doctype html>
+    <html lang="de">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Registrierung</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+
+        <form id="registerForm">
+            <h2>Registrierung</h2>
+            <input type="text" id="name" placeholder="Name" required><br>
+            <input type="email" id="email" placeholder="E-Mail" required><br>
+            <input type="password" id="passwort" placeholder="Passwort" required><br>
+            <button type="submit">Registrieren</button>
+            <div id="message"></div>
+        </form>
+
+        <script>
+            document.getElementById('registerForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                const passwort = document.getElementById('passwort').value;
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, passwort })
+                });
+                const data = await res.json();
+                document.getElementById('message').textContent = data.message;
+                if (data.success) {
+                    // Weiterleitung oder weitere Logik
+                }
+            });
+        </script>
+    </body>
+    </html>
+</head>
+<body>
+
+</body>
+</html>
