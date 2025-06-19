@@ -57,8 +57,66 @@ app.get('/api/menu/week/:startDate?', async (req, res) => {
         res.status(500).json({ success: false, error: 'Fehler beim Abrufen des Wochenmenüs' });
     }
 });
-// Server startup
 
+const session = require('express-session');
+
+app.use(session({
+    secret: 'dein_geheimes_session_secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false }
+}));
+
+app.use(express.static(__dirname + "/public"));
+
+app.post('/api/login', async (req, res) => {
+    const { email, passwort } = req.body;
+    try {
+        const user = await dbCon.getUserByEmail(email);
+        if (user && user.Passwort === passwort) {
+            req.session.userId = user.ID;
+            res.json({ success: true, message: 'Login erfolgreich' });
+        } else {
+            res.status(401).json({ success: false, message: 'Ungültige Anmeldedaten' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Serverfehler beim Login' });
+    }
+});
+
+app.get('/api/session', (req, res) => {
+    if (req.session.userId) {
+        res.json({ loggedIn: true, userId: req.session.userId });
+    } else {
+        res.json({ loggedIn: false });
+    }
+});
+
+app.post('/api/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Fehler beim Ausloggen' });
+        }
+        res.clearCookie('connect.sid'); // Name des Session-Cookies
+        res.json({ success: true, message: 'Erfolgreich ausgeloggt' });
+    });
+});
+
+app.post('/api/register', async (req, res) => {
+    const { name, email, passwort } = req.body;
+    try {
+        const userExists = await dbCon.getUserByEmail(email);
+        if (userExists) {
+            return res.status(400).json({ success: false, message: 'E-Mail bereits registriert' });
+        }
+        await dbCon.createUser(name, email, passwort);
+        res.json({ success: true, message: 'Registrierung erfolgreich' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Serverfehler bei der Registrierung' });
+    }
+});
+
+// Server startup
 app.listen(port, () => {
     console.log(`Listening on ${port}`)
 })

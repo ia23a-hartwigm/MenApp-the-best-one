@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<form id="loginForm">
+    <h2>Login</h2>
+    <input type="email" id="email" name="username" placeholder="E-Mail" required><br>
+    <input type="password" id="passwort" placeholder="Passwort" required><br>
+    <button type="submit">Login</button>
+    <div id="message"></div>
+
+    <button id="logoutBtn" type="button" style="display:none;">Logout</button>
+</form>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const passwort = document.getElementById('passwort').value;
+        const messageElem = document.getElementById('message');
+        if (!email || !passwort) {
+            messageElem.textContent = 'Bitte alle Felder ausfüllen.';
+            messageElem.classList.remove('success');
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            messageElem.textContent = 'Ungültige E-Mail-Adresse.';
+            messageElem.classList.remove('success');
+            return;
+        }
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({email, passwort}),
+            credentials: 'include'
+        });
+        const data = await res.json();
+        messageElem.textContent = data.message;
+        if (data.success) {
+            messageElem.classList.add('success');
+            window.location.href = '/menu.html';
+        } else {
+            messageElem.classList.remove('success');
+        }
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        const res = await fetch('/api/session', { credentials: 'include' });
+        const data = await res.json();
+        const messageElem = document.getElementById('message');
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (data.loggedIn) {
+            messageElem.classList.add('success');
+            logoutBtn.style.display = 'inline-block';
+        }
+        logoutBtn.onclick = async () => {
+            await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+            window.location.href = '/menu.html';
+            messageElem.classList.remove('success');
+            logoutBtn.style.display = 'none';
+        };
+    });
+</script>
+</body>
+</html>
