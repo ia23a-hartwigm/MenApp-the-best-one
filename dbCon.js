@@ -113,6 +113,31 @@ async function createUser(name, email, passwort) {
     );
 }
 
+async function getWarenkorbByUser (userId) {
+    try {
+        return await executeQuery(
+            'SELECT g.Name AS gerichtName, w.menge FROM warenkorb w JOIN gerichte g ON g.ID = w.gerichtID WHERE w.userID = ? AND w.abgeholt = FALSE',
+            [userId]
+        );
+    } catch (error) {
+        console.error('Error fetching menu for week:', error);
+        throw error;
+    }
+};
+
+async function getBestellungByUser (userId) {
+    try {
+        return await executeQuery(
+            'SELECT g.Name AS gerichtName, w.menge FROM warenkorb w JOIN gerichte g ON g.ID = w.gerichtID WHERE w.userID = ? AND w.abgeholt = True',
+            [userId]
+        );
+    } catch (error) {
+        console.error('Error fetching menu for week:', error);
+        throw error;
+    }
+};
+
+
 
 module.exports = {
     getTest,
@@ -123,7 +148,8 @@ module.exports = {
     getUserByEmail,
     getUserById,
     createUser,
-
+    getWarenkorbByUser,
+    getBestellungByUser
 };
 
 async function executeQuery(sql, params = []) {
