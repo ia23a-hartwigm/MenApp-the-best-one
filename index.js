@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const dbCon = require('./dbCon.js');
 const app = express();
-const port = 3000;
+const port = process.env.SERVER_PORT;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -22,6 +22,14 @@ app.get('/api/testDB', async (req, res) => {
     }
 });
 
+app.get('/api/menu/id/:id', async (req, res) => {
+    try {
+        const menu = await dbCon.getMenuByDay(req.params.id);
+        res.json(menu);
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Fehler beim Abrufen des Tagesmenüs' });
+    }
+});
 
 app.get('/api/test', async (req, res) => {
     try {
@@ -35,6 +43,20 @@ app.get('/api/test', async (req, res) => {
     }
 })
 
+
+app.get('/api/menu/week/:startDate?', async (req, res) => {
+    try {
+        let startDate = req.params.startDate;
+        if (!startDate) {
+            const today = new Date();
+            startDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
+        }
+        const menu = await dbCon.getMenuForWeek(startDate);
+        res.json(menu);
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Fehler beim Abrufen des Wochenmenüs' });
+    }
+});
 // Server startup
 
 app.listen(port, () => {
