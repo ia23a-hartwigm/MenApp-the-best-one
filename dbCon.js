@@ -52,6 +52,11 @@ async function getUserByEmail(email) {
     return rows[0];
 }
 
+async function getUserById(id) {
+    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+    return rows[0];
+}
+
 async function createUser(name, email, passwort) {
     await pool.query(
         'INSERT INTO users (Name, Email, Passwort) VALUES (?, ?, ?)',
@@ -65,6 +70,7 @@ module.exports = {
     getMenuByDay: getMenuById,
     getMenuForWeek,
     getUserByEmail,
+    getUserById,
     createUser,
 
 };

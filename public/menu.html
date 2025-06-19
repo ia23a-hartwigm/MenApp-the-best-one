@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<h1>Speiseplan der Woche</h1>
+<h1 id="headerTitle">Speiseplan der Woche</h1>
 <div id="menu">Lade Daten…</div>
 
 <!-- Modal -->
@@ -125,6 +125,23 @@
             modal.classList.add('hidden');
         }
     });
+
+    async function updateHeaderWithUsername() {
+        try {
+            const res = await fetch('/api/user/name', { credentials: 'include' });
+            if (!res.ok) return;
+
+            const data = await res.json();
+            if (data.success && data.name) {
+                const header = document.getElementById('headerTitle');
+                header.textContent = `Speiseplan der Woche – Willkommen, ${data.name}`;
+            }
+        } catch (err) {
+            console.error('Fehler beim Abrufen des Benutzernamens:', err);
+        }
+    }
+
+    updateHeaderWithUsername();
 
     loadMenu();
 </script>
