@@ -5,30 +5,17 @@ const crypto = require('crypto');
 const app = express();
 const port = process.env.SERVER_PORT;
 
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 app.use(express.static(__dirname + "/public"));
 
-
-app.get('/api/testDB', async (req, res) => {
-    try {
-        const test = await dbCon.getTest();
-        res.json(test);
-    } catch (error) {
-        console.error('Fehler beim Abrufen der tests:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Serverfehler beim Abrufen der tests'
-        });
-    }
-});
 
 app.get('/api/menu/id/:id', async (req, res) => {
     try {
         const menu = await dbCon.getMenuByDay(req.params.id);
         res.json(menu);
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Fehler beim Abrufen des Tagesmenüs' });
+        res.status(500).json({success: false, error: 'Fehler beim Abrufen des Tagesmenüs'});
     }
 });
 
@@ -36,7 +23,7 @@ app.get('/api/test', async (req, res) => {
     try {
         res.json('Test from the Server')
     } catch (error) {
-        console.log(error);
+        console.error(error);
         res.status(500).json({
             success: false,
             error: 'Serverfehler'
@@ -55,9 +42,55 @@ app.get('/api/menu/week/:startDate?', async (req, res) => {
         const menu = await dbCon.getMenuForWeek(startDate);
         res.json(menu);
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Fehler beim Abrufen des Wochenmenüs' });
+        res.status(500).json({success: false, error: 'Fehler beim Abrufen des Wochenmenüs'});
     }
 });
+
+// API to add a new menu item to the warenkorb of the logged-in user
+app.post('/api/kart/add', async (req, res) => {
+    console.log('Received request to add item to cart:', req.body);
+    try {
+        const {userId, menuItemId, menge} = req.body;
+        if (!userId || !menuItemId || !menge) {
+            return res.status(400).json({success: false, error: 'Bitte geben Sie userId, menuItemId und menge an'});
+        }
+
+        // Assuming you have a function in dbCon to add an item to the cart
+        const result = await dbCon.addToCart(userId, menuItemId, menge);
+        if (result.success) {
+            res.json({success: true, message: 'Artikel erfolgreich zum Warenkorb hinzugefügt'});
+        } else {
+            res.status(500).json({success: false, error: 'Fehler beim Hinzufügen des Artikels zum Warenkorb'});
+        }
+
+    } catch (error) {
+        console.error('Error adding item to cart:', error);
+        res.status(500).json({success: false, error: 'Fehler beim Hinzufügen des Artikels zum Warenkorb'});
+    }
+});
+
+// API zum vollständigen Entfernen eines Elements aus dem Warenkorb
+app.post('/api/kart/remove', async (req, res) => {
+    console.log('Received request to remove item from cart:', req.body);
+    try {
+        const {userId, warenKorbId} = req.body;
+        if (!userId || !warenKorbId) {
+            return res.status(400).json({success: false, error: 'Bitte geben Sie userId und warenKorbId an'});
+        }
+
+        const result = await dbCon.removeFromCart(userId, warenKorbId);
+        if (result.success) {
+            res.json({success: true, message: 'Artikel erfolgreich aus dem Warenkorb entfernt'});
+        } else {
+            res.status(404).json({success: false, error: result.error || 'Fehler beim Entfernen des Artikels'});
+        }
+    } catch (error) {
+        console.error('Error removing item from cart:', error);
+        res.status(500).json({success: false, error: 'Serverfehler beim Entfernen des Artikels'});
+    }
+});
+
+
 
 const session = require('express-session');
 
