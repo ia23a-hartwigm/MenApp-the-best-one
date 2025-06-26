@@ -46,6 +46,122 @@
     </div>
 </div>
 
-<!-- Dein JavaScript-Code bleibt unverändert -->
+<script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        const loginForm = document.getElementById('loginForm');
+        const messageElement = document.getElementById('message');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const adminLink = document.getElementById('adminLink');
+        const userInfo = document.getElementById('userInfo');
+        const userNameElement = document.getElementById('userName');
+
+        // Prüfen, ob Benutzer bereits angemeldet ist
+        try {
+            const response = await fetch('/api/session', {
+                credentials: 'include'
+            });
+            const data = await response.json();
+
+            if (data.loggedIn && data.userId) {
+                userInfo.style.display = 'block';
+                userNameElement.textContent = data.userName || data.email;
+                logoutBtn.style.display = 'block';
+
+                // Admin-Link anzeigen, wenn der Benutzer Admin-Rechte hat
+                if (data.isAdmin) {
+                    adminLink.style.display = 'block';
+                }
+
+                messageElement.textContent = 'Du bist angemeldet.';
+                messageElement.className = 'message success';
+            }
+        } catch (error) {
+            console.error('Fehler beim Prüfen des Login-Status:', error);
+        }
+
+        // Login-Formular-Handler
+        loginForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const passwort = document.getElementById('passwort').value;
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, passwort }),
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    messageElement.textContent = 'Login erfolgreich!';
+                    messageElement.className = 'message success';
+
+                    // UI aktualisieren
+                    userInfo.style.display = 'block';
+                    userNameElement.textContent = data.userName || email;
+                    logoutBtn.style.display = 'block';
+
+                    // Admin-Link anzeigen, wenn der Benutzer Admin-Rechte hat
+                    if (data.isAdmin) {
+                        adminLink.style.display = 'block';
+                    }
+
+                    // Nach erfolgreicher Anmeldung zur Hauptseite weiterleiten
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 1000);
+                } else {
+                    messageElement.textContent = data.message || 'Fehler beim Login. Bitte überprüfe deine Anmeldedaten.';
+                    messageElement.className = 'message error';
+                }
+            } catch (error) {
+                console.error('Login-Fehler:', error);
+                messageElement.textContent = 'Ein Fehler ist aufgetreten. Bitte versuche es später erneut.';
+                messageElement.className = 'message error';
+            }
+        });
+
+        // Logout-Button-Handler
+        logoutBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    // UI zurücksetzen
+                    userInfo.style.display = 'none';
+                    adminLink.style.display = 'none';
+                    logoutBtn.style.display = 'none';
+
+                    messageElement.textContent = 'Erfolgreich abgemeldet.';
+                    messageElement.className = 'message success';
+
+                    // Formular zurücksetzen
+                    loginForm.reset();
+
+                    // Seite neuladen, um den Status zu aktualisieren
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    messageElement.textContent = 'Fehler beim Abmelden.';
+                    messageElement.className = 'message error';
+                }
+            } catch (error) {
+                console.error('Logout-Fehler:', error);
+                messageElement.textContent = 'Ein Fehler ist aufgetreten. Bitte versuche es später erneut.';
+                messageElement.className = 'message error';
+            }
+        });
+    });
+</script>
 </body>
 </html>
