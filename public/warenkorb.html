@@ -4,70 +4,54 @@
     <meta charset="UTF-8">
     <title>Mein Warenkorb</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f2f4f8;
-            padding: 30px;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 30px;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-        }
-        th, td {
-            padding: 16px 20px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-        th {
-            background-color: #4f46e5;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        tr:hover {
-            background-color: #eef0ff;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<nav class="navigation">
+    <div class="logo">
+        <a href="/index.html">MenApp</a>
+    </div>
+    <ul class="nav-links">
+        <li><a href="/menu.html">Speiseplan</a></li>
+        <li class="active"><a href="/warenkorb.html">Warenkorb</a></li>
+        <li><a href="/login/login.html">Login</a></li>
+        <li id="adminLink" style="display: none;"><a href="/admin/admin.html">Admin</a></li>
+    </ul>
+    <div class="user-info" id="userInfo" style="display: none;">
+        Angemeldet als: <span id="userName"></span>
+    </div>
+</nav>
 
-<h1>🛒 Mein Warenkorb</h1>
+<div class="main-content">
+    <h1>🛒 Mein Warenkorb</h1>
 
-<table id="warenkorbTabelle">
-    <thead>
-    <tr>
-        <th>Gericht</th>
-        <th>Menge</th>
-    </tr>
-    </thead>
-    <tbody>
-    <!-- JavaScript befüllt hier -->
-    </tbody>
-</table>
+    <table id="warenkorbTabelle">
+        <thead>
+        <tr>
+            <th>Gericht</th>
+            <th>Menge</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- JavaScript befüllt hier -->
+        </tbody>
+    </table>
 
-<h1>🛒 Meine Bestellungen</h1>
+    <h1>🛒 Meine Bestellungen</h1>
 
-<table id="bestellungTabelle">
-    <thead>
-    <tr>
-        <th>Gericht</th>
-        <th>Menge</th>
-    </tr>
-    </thead>
-    <tbody>
-    <!-- JavaScript befüllt hier -->
-    </tbody>
-</table>
+    <table id="bestellungTabelle">
+        <thead>
+        <tr>
+            <th>Gericht</th>
+            <th>Menge</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- JavaScript befüllt hier -->
+        </tbody>
+    </table>
+</div>
+
 <script>
     // Daten aus der DB holen
     async function ladeWarenkorb() {
@@ -76,7 +60,7 @@
             const sessionData = await sessionRes.json();
 
             if (!sessionData.loggedIn || !sessionData.userId) {
-                document.body.innerHTML = '<p style="text-align:center; color:red;">Bitte zuerst einloggen.</p>';
+                document.querySelector('.main-content').innerHTML = '<p style="text-align:center; color:red;">Bitte zuerst einloggen.</p>';
                 return;
             }
 
@@ -99,17 +83,16 @@
             daten.forEach(eintrag => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-          <td>${eintrag.gerichtName}</td>
-          <td>${eintrag.menge}</td>
-        `;
+                        <td>${eintrag.gerichtName}</td>
+                        <td>${eintrag.menge}</td>
+                    `;
                 tbody.appendChild(tr);
             });
         } catch (err) {
             console.error(err);
-            document.body.innerHTML = '<p style="text-align:center; color:red;">Fehler beim Abrufen der Daten.</p>';
+            document.querySelector('.main-content').innerHTML = '<p style="text-align:center; color:red;">Fehler beim Abrufen der Daten.</p>';
         }
     }
-
 
     async function ladeBestellung() {
         try {
@@ -117,7 +100,7 @@
             const sessionData = await sessionRes.json();
 
             if (!sessionData.loggedIn || !sessionData.userId) {
-                document.body.innerHTML = '<p style="text-align:center; color:red;">Bitte zuerst einloggen.</p>';
+                document.querySelector('.main-content').innerHTML = '<p style="text-align:center; color:red;">Bitte zuerst einloggen.</p>';
                 return;
             }
 
@@ -140,21 +123,19 @@
             daten.forEach(eintrag => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-          <td>${eintrag.gerichtName}</td>
-          <td>${eintrag.menge}</td>
-        `;
+                        <td>${eintrag.gerichtName}</td>
+                        <td>${eintrag.menge}</td>
+                    `;
                 tbody.appendChild(tr);
             });
         } catch (err) {
             console.error(err);
-            document.body.innerHTML = '<p style="text-align:center; color:red;">Fehler beim Abrufen der Daten.</p>';
+            document.querySelector('.main-content').innerHTML = '<p style="text-align:center; color:red;">Fehler beim Abrufen der Daten.</p>';
         }
     }
-
 
     window.addEventListener("DOMContentLoaded", ladeWarenkorb);
     window.addEventListener("DOMContentLoaded", ladeBestellung);
 </script>
-
 </body>
 </html>

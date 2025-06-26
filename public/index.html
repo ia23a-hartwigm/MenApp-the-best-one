@@ -1,26 +1,45 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Document</title>
+  <title>MenApp - Startseite</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1 id="headline">däfovkn</h1>
-<button id="fetchButton">Get Data</button>
+<nav class="navigation">
+  <div class="logo">
+    <a href="/index.html">MenApp</a>
+  </div>
+  <ul class="nav-links">
+    <li class="active"><a href="/index.html">Startseite</a></li>
+    <li><a href="/menu.html">Speiseplan</a></li>
+    <li><a href="/warenkorb.html">Warenkorb</a></li>
+    <li><a href="/login/login.html">Login</a></li>
+    <li id="adminLink" style="display: none;"><a href="/admin/admin.html">Admin</a></li>
+  </ul>
+  <div class="user-info" id="userInfo" style="display: none;">
+    Angemeldet als: <span id="userName"></span>
+  </div>
+</nav>
+
+<div class="main-content">
+  <h1 id="headline">Willkommen bei MenApp</h1>
+  <p>Deine App für den Mensaplan und Essensbestellung.</p>
+  <button id="fetchButton" class="btn-primary">Daten abrufen</button>
+</div>
 
 <script>
     document.getElementById('fetchButton').addEventListener('click', async () => {
         try {
             const response = await fetch('api/test');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const data = await response.text(); // or .json() if it's JSON
+            const data = await response.text(); // oder .json() wenn es JSON ist
             document.getElementById('headline').textContent = data;
         } catch (error) {
             console.error('Fetch error:', error);
-            document.getElementById('headline').textContent = 'Error fetching data';
+            document.getElementById('headline').textContent = 'Fehler beim Abrufen der Daten';
         }
     });
 </script>

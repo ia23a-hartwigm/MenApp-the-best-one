@@ -1,13 +1,177 @@
+/* Grundlegende Styles */
 body {
     font-family: sans-serif;
-    padding: 1rem;
+    margin: 0;
+    padding: 0;
     background: #f9f9f9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 h1, h2 {
     margin-top: 2rem;
 }
 
+/* Navigation - einheitlich für alle Seiten */
+.navigation {
+    background-color: #333;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+}
+
+.logo a {
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-links li {
+    margin-left: 1rem;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem;
+}
+
+.nav-links .active a {
+    background-color: #555;
+    border-radius: 3px;
+}
+
+.nav-links a:hover {
+    background-color: #555;
+    border-radius: 3px;
+}
+
+.user-info {
+    margin-left: auto;
+    font-size: 0.9rem;
+}
+
+/* Hauptinhalt für alle Seiten */
+.main-content {
+    padding: 1rem;
+    margin-top: 60px; /* Platz für die fixierte Navigation */
+    flex: 1;
+}
+
+/* Spezielles Layout für Login/Register */
+.content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    margin-top: 60px; /* Platz für die fixierte Navigation */
+}
+
+/* Login & Registrierung */
+.register-container, .login-container, .form-container {
+    background: #fff;
+    padding: 2rem 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    min-width: 320px;
+    max-width: 400px;
+    width: 100%;
+}
+
+/* Formularelemente */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    margin-bottom: 0.5rem;
+}
+
+input {
+    padding: 0.7rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+input:focus {
+    border-color: #4f8cff;
+    outline: none;
+}
+
+button, .btn-primary {
+    padding: 0.7rem;
+    background: #4f8cff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button:hover, .btn-primary:hover {
+    background: #2563eb;
+}
+
+.btn-secondary {
+    background: #f44336;
+}
+
+.btn-secondary:hover {
+    background: #d32f2f;
+}
+
+/* Nachrichten */
+#message, .message {
+    color: red;
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+#message.success, .message.success {
+    color: green;
+}
+
+/* Links */
+.register-link {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.register-link a {
+    color: #4f8cff;
+    text-decoration: none;
+}
+
+.register-link a:hover {
+    text-decoration: underline;
+}
+
+/* Speiseplan */
 .day-section {
     margin-bottom: 2rem;
 }
@@ -25,22 +189,32 @@ h1, h2 {
     color: #666;
 }
 
-@media (min-width: 600px) {
-    .meal {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
+/* Bestell-Button Styling */
+.order-meal {
+    margin-top: 0.5rem;
+    text-align: right;
+}
 
-    .meal-details {
-        flex: 1;
-    }
+.order-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
 
-    .meal-price {
-        font-weight: bold;
-        white-space: nowrap;
-        margin-left: 1rem;
-    }
+.order-button:hover {
+    background-color: #3e8e41;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.order-button:active {
+    transform: translateY(0);
+    box-shadow: none;
 }
 
 /* Modal */
@@ -78,56 +252,6 @@ h1, h2 {
 .hidden {
     display: none;
 }
-/* Bestell-Button Styling */
-.order-meal {
-    margin-top: 0.5rem;
-    text-align: right;
-}
-
-.order-button {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 8px 16px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.order-button:hover {
-    background-color: #3e8e41;
-    transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.order-button:active {
-    transform: translateY(0);
-    box-shadow: none;
-}
-
-/* Anpassung für größere Bildschirme */
-@media (min-width: 600px) {
-    .order-meal {
-        align-self: flex-end;
-        margin-left: 1rem;
-    }
-
-    /* Anpassung des meal-Layouts */
-    .meal {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-
-    .meal-details {
-        flex: 1;
-    }
-
-    .meal-price {
-        margin: 0 1rem;
-    }
-}
 
 /* Modal Order Button und Mengenauswahl */
 .modal-order {
@@ -148,4 +272,53 @@ h1, h2 {
 
 .modal-order-button {
     min-width: 140px;
+}
+
+/* Responsive Design */
+@media (min-width: 600px) {
+    .meal {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .meal-details {
+        flex: 1;
+    }
+
+    .meal-price {
+        font-weight: bold;
+        white-space: nowrap;
+        margin-left: 1rem;
+    }
+
+    .order-meal {
+        align-self: flex-end;
+        margin-left: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .navigation {
+        flex-direction: column;
+        position: relative;
+    }
+
+    .nav-links {
+        margin-top: 1rem;
+        width: 100%;
+        justify-content: space-around;
+    }
+
+    .user-info {
+        margin: 1rem 0;
+    }
+
+    .content {
+        margin-top: 120px; /* Mehr Platz für die mehrzeilige Navigation */
+    }
+
+    .main-content {
+        margin-top: 120px;
+    }
 }
