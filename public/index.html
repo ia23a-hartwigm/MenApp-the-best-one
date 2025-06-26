@@ -1,33 +1,239 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>MenApp - Startseite</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="/header.js"></script>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Speiseplan</title>
+    <link rel="stylesheet" href="style.css"/>
+    <script src="/header.js"></script>
 </head>
 <body>
 
 <div class="main-content">
-  <h1 id="headline">Willkommen bei MenApp</h1>
-  <p>Deine App für den Mensaplan und Essensbestellung.</p>
-  <button id="fetchButton" class="btn-primary">Daten abrufen</button>
+    <h1 id="headerTitle">Speiseplan der Woche</h1>
+    <div id="menu">Lade Daten…</div>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="modal hidden">
+    <div class="modal-content">
+        <span id="closeModal" class="close">&times;</span>
+        <div id="modal-body">Lade…</div>
+    </div>
 </div>
 
 <script>
-    document.getElementById('fetchButton').addEventListener('click', async () => {
+    async function loadMenu() {
+        const menuDiv = document.getElementById('menu');
         try {
-            const response = await fetch('api/test');
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const data = await response.text(); // oder .json() wenn es JSON ist
-            document.getElementById('headline').textContent = data;
-        } catch (error) {
-            console.error('Fetch error:', error);
-            document.getElementById('headline').textContent = 'Fehler beim Abrufen der Daten';
+            const response = await fetch('/api/menu/week');
+            const data = await response.json();
+
+            // Group meals by date string (YYYY-MM-DD)
+            const groupedByDate = {};
+            data.forEach(meal => {
+                const dateKey = meal.Tag.split('T')[0];
+                if (!groupedByDate[dateKey]) groupedByDate[dateKey] = [];
+                groupedByDate[dateKey].push(meal);
+            });
+
+            // Sort dates ascending
+            const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(a) - new Date(b));
+
+            menuDiv.innerHTML = '';
+
+            const weekdaysDe = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+
+            for (const dateStr of sortedDates) {
+                const date = new Date(dateStr);
+                const weekdayName = weekdaysDe[date.getDay()] || dateStr;
+
+                // Format date as dd.mm.yyyy
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                const formattedDate = `${day}.${month}.${year}`;
+
+                const section = document.createElement('div');
+                section.className = 'day-section';
+                section.innerHTML = `<h2>${weekdayName} (${formattedDate})</h2>`;
+
+                groupedByDate[dateStr].forEach(meal => {
+                    const mealEl = document.createElement('div');
+                    mealEl.className = 'meal';
+                    mealEl.style.cursor = 'pointer';
+                    mealEl.setAttribute('data-id', meal.ID);
+                    mealEl.addEventListener('click', () => showModal(meal.ID));
+
+                    mealEl.innerHTML = `
+  <div class="meal-details">
+    <strong>${meal.Name}</strong><br>
+    <span>${meal.Beschreibung}</span><br>
+    <small>Allergene: ${meal.Allergene || 'Keine'}</small><br>
+    <div class="notes">${meal.Hinweise || ''}</div>
+  </div>
+  <div class="meal-price">${meal.Preis} €</div>
+  <br>
+  <div class="order-meal">
+    <button class="order-button" onclick="orderMeal(${meal.ID}, 1); event.stopPropagation();">Bestellen</button>
+  </div>
+`;
+
+                    section.appendChild(mealEl);
+                });
+
+                menuDiv.appendChild(section);
+            }
+        } catch (err) {
+            menuDiv.innerHTML = `<p>Fehler beim Laden der Datei: ${err.message}</p>`;
+            console.error(err);
+        }
+    }
+
+    async function showModal(mealId) {
+        const modal = document.getElementById('modal');
+        const modalBody = document.getElementById('modal-body');
+
+        modal.classList.remove('hidden');
+        modalBody.innerHTML = 'Lade Details…';
+
+        try {
+            const res = await fetch(`/api/menu/id/${mealId}`);
+            const data = await res.json();
+
+            if (!Array.isArray(data) || data.length === 0) {
+                modalBody.innerHTML = 'Gericht nicht gefunden.';
+                return;
+            }
+
+            const meal = data[0];
+
+            const allergens = meal.Allergene ? meal.Allergene.split(',').map(a => a.trim()) : [];
+            const notes = meal.Hinweise ? meal.Hinweise.split(',').map(n => n.trim()) : [];
+
+            modalBody.innerHTML = `
+  <h2>${meal.Name}</h2>
+  <p>${meal.Beschreibung}</p>
+  <p><strong>Preis:</strong> ${meal.Preis} €</p>
+  <p><strong>Allergene:</strong> ${allergens.join(', ') || 'Keine'}</p>
+  <p><strong>Hinweise:</strong> ${notes.join(', ') || 'Keine'}</p>
+  <div class="modal-order">
+    <input type="number" id="order-quantity" min="1" value="1" class="quantity-input"/>
+    <button class="order-button modal-order-button" onclick="orderMeal(${meal.ID})">In den Warenkorb</button>
+  </div>
+`;
+
+        } catch (err) {
+            modalBody.innerHTML = 'Fehler beim Laden.';
+            console.error(err);
+        }
+    }
+
+    document.getElementById('closeModal').addEventListener('click', () => {
+        document.getElementById('modal').classList.add('hidden');
+    });
+
+    window.addEventListener('click', (event) => {
+        const modal = document.getElementById('modal');
+        if (event.target === modal) {
+            modal.classList.add('hidden');
         }
     });
+
+    async function updateHeaderWithUsername() {
+        try {
+            const res = await fetch('/api/user/name', {credentials: 'include'});
+            if (!res.ok) return;
+
+            const data = await res.json();
+            if (data.success && data.name) {
+                const header = document.getElementById('headerTitle');
+                header.textContent = `Speiseplan der Woche – Willkommen, ${data.name}`;
+            }
+        } catch (err) {
+            console.error('Fehler beim Abrufen des Benutzernamens:', err);
+        }
+    }
+    let currentUserId = null;
+
+    updateHeaderWithUsername();
+
+    loadMenu();
+    checkSession();
+
+    async function orderMeal(mealId, quantity = null) {
+        // Wenn keine Menge übergeben wurde, aus dem Input-Feld lesen oder 1 verwenden
+        const orderQuantity = quantity ||
+            (document.getElementById('order-quantity') ?
+                document.getElementById('order-quantity').value : 1);
+
+        try {
+            // API-Aufruf zum Hinzufügen zum Warenkorb
+            const response = await fetch('/api/kart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    userId: currentUserId,
+                    menuItemId: mealId,
+                    menge: orderQuantity
+                })
+            });
+
+            // Überprüfen, ob die Antwort erfolgreich war
+            if (!response.ok) {
+                throw new Error(`Server antwortet mit Status ${response.status}`);
+            }
+
+            // Content-Type prüfen
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const result = await response.json();
+                if (result.success) {
+                    alert(`${orderQuantity}x Gericht hinzugefügt!`);
+                } else {
+                    throw new Error(result.message || 'Unbekannter Fehler');
+                }
+            } else {
+                // Falls kein JSON zurückkommt, Textantwort verarbeiten
+                const text = await response.text();
+                if (response.ok) {
+                    alert(`${orderQuantity}x Gericht hinzugefügt!`);
+                } else {
+                    throw new Error(`Serverantwort: ${text.substring(0, 100)}`);
+                }
+            }
+
+            // Modal schließen, falls es geöffnet ist
+            const modal = document.getElementById('modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                modal.classList.add('hidden');
+            }
+        } catch (err) {
+            alert(`Fehler beim Hinzufügen zum Warenkorb: ${err.message}`);
+            console.error(err);
+        }
+    }
+
+    async function checkSession() {
+        try {
+            const response = await fetch('/api/session', {credentials: 'include'});
+            if (!response.ok) throw new Error('Fehler beim Abrufen der Session');
+
+            const data = await response.json();
+            if (data.loggedIn) {
+                currentUserId = data.userId;
+                console.log('Benutzer angemeldet mit ID:', currentUserId);
+            } else {
+                console.log('Kein Benutzer angemeldet');
+                // Optional: Umleitung zur Login-Seite
+                // window.location.href = '/login.html';
+            }
+        } catch (err) {
+            console.error('Session-Fehler:', err);
+        }
+    }
 </script>
 </body>
 </html>

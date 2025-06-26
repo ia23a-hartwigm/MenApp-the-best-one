@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <span id="userName"></span>
         </div>
         <ul class="nav-links">
-            <li><a href="/menu.html">Speiseplan</a></li>
+            <li><a href="/index.html">Speiseplan</a></li>
             <li><a href="/warenkorb.html">Warenkorb</a></li>
             <li><a href="/login/login.html">Login</a></li>
             <li id="adminLink" style="display: none;"><a href="/admin/admin.html">Admin</a></li>
