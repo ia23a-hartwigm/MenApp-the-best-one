@@ -6,37 +6,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="style.css">
     <script src="/header.js"></script>
+    <style>
+        /* Warenkorb-spezifisches Styling */
+        .warenkorb-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        h1 {
+            color: #0066cc;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: #0066cc;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #f1f7ff;
+        }
+
+        .btn-bestellen {
+            display: block;
+            width: 100%;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-bestellen:hover {
+            background-color: #0055aa;
+        }
+
+        .leerer-warenkorb {
+            text-align: center;
+            padding: 30px;
+            color: #6c757d;
+        }
+    </style>
 </head>
 <body>
 
 <div class="main-content">
-    <h1>🛒 Mein Warenkorb</h1>
+    <div class="warenkorb-container">
+        <h1>🛒 Mein Warenkorb</h1>
 
-    <table id="warenkorbTabelle">
-        <thead>
-        <tr>
-            <th>Gericht</th>
-            <th>Menge</th>
-        </tr>
-        </thead>
-        <tbody>
-        <!-- JavaScript befüllt hier -->
-        </tbody>
-    </table>
+        <table id="warenkorbTabelle">
+            <thead>
+            <tr>
+                <th>Gericht</th>
+                <th>Menge</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- JavaScript befüllt hier -->
+            </tbody>
+        </table>
 
-    <h1>🛒 Meine Bestellungen</h1>
+        <h1>🛒 Meine Bestellungen</h1>
 
-    <table id="bestellungTabelle">
-        <thead>
-        <tr>
-            <th>Gericht</th>
-            <th>Menge</th>
-        </tr>
-        </thead>
-        <tbody>
-        <!-- JavaScript befüllt hier -->
-        </tbody>
-    </table>
+        <table id="bestellungTabelle">
+            <thead>
+            <tr>
+                <th>Gericht</th>
+                <th>Menge</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- JavaScript befüllt hier -->
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
@@ -47,7 +121,7 @@
             const sessionData = await sessionRes.json();
 
             if (!sessionData.loggedIn || !sessionData.userId) {
-                document.querySelector('.main-content').innerHTML = '<p style="text-align:center; color:red;">Bitte zuerst einloggen.</p>';
+                document.querySelector('.warenkorb-container').innerHTML = '<p style="text-align:center; color:red;">Bitte zuerst einloggen.</p>';
                 return;
             }
 
@@ -63,21 +137,21 @@
             const tbody = document.querySelector("#warenkorbTabelle tbody");
 
             if (daten.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;">Keine offenen Bestellungen.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="2" class="leerer-warenkorb">Keine offenen Bestellungen.</td></tr>';
                 return;
             }
 
             daten.forEach(eintrag => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                        <td>${eintrag.gerichtName}</td>
-                        <td>${eintrag.menge}</td>
-                    `;
+                    <td>${eintrag.gerichtName}</td>
+                    <td>${eintrag.menge}</td>
+                `;
                 tbody.appendChild(tr);
             });
         } catch (err) {
             console.error(err);
-            document.querySelector('.main-content').innerHTML = '<p style="text-align:center; color:red;">Fehler beim Abrufen der Daten.</p>';
+            document.querySelector('.warenkorb-container').innerHTML = '<p style="text-align:center; color:red;">Fehler beim Abrufen der Daten.</p>';
         }
     }
 
@@ -87,7 +161,6 @@
             const sessionData = await sessionRes.json();
 
             if (!sessionData.loggedIn || !sessionData.userId) {
-                document.querySelector('.main-content').innerHTML = '<p style="text-align:center; color:red;">Bitte zuerst einloggen.</p>';
                 return;
             }
 
@@ -103,21 +176,20 @@
             const tbody = document.querySelector("#bestellungTabelle tbody");
 
             if (daten.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;">Keine offenen Bestellungen.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="2" class="leerer-warenkorb">Keine offenen Bestellungen.</td></tr>';
                 return;
             }
 
             daten.forEach(eintrag => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                        <td>${eintrag.gerichtName}</td>
-                        <td>${eintrag.menge}</td>
-                    `;
+                    <td>${eintrag.gerichtName}</td>
+                    <td>${eintrag.menge}</td>
+                `;
                 tbody.appendChild(tr);
             });
         } catch (err) {
             console.error(err);
-            document.querySelector('.main-content').innerHTML = '<p style="text-align:center; color:red;">Fehler beim Abrufen der Daten.</p>';
         }
     }
 
