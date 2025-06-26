@@ -7,8 +7,25 @@
     <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-<h1 id="headerTitle">Speiseplan der Woche</h1>
-<div id="menu">Lade Daten…</div>
+<nav class="navigation">
+    <div class="logo">
+        <a href="/index.html">MenApp</a>
+    </div>
+    <ul class="nav-links">
+        <li class="active"><a href="/menu.html">Speiseplan</a></li>
+        <li><a href="/warenkorb.html">Warenkorb</a></li>
+        <li><a href="/login/login.html">Login</a></li>
+        <li id="adminLink" style="display: none;"><a href="/admin/admin.html">Admin</a></li>
+    </ul>
+    <div class="user-info" id="userInfo" style="display: none;">
+        Angemeldet als: <span id="userName"></span>
+    </div>
+</nav>
+
+<div class="main-content">
+    <h1 id="headerTitle">Speiseplan der Woche</h1>
+    <div id="menu">Lade Daten…</div>
+</div>
 
 <!-- Modal -->
 <div id="modal" class="modal hidden">
@@ -230,7 +247,6 @@
             console.error('Session-Fehler:', err);
         }
     }
-
 </script>
 </body>
 </html>
