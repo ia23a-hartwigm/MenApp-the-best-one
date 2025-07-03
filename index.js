@@ -270,3 +270,79 @@ function adminAuthMiddleware(req, res, next) {
 
 // Anwendung der Middleware auf Admin-Routen
 app.use('/admin', adminAuthMiddleware);
+
+// Neuer API-Endpunkt zum Erstellen eines Menüs (nur für Admins)
+app.post('/api/admin/menu/create', async (req, res) => {
+    // Prüfen, ob der Benutzer eingeloggt und Admin ist
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Nicht eingeloggt' });
+    }
+
+    try {
+        const user = await dbCon.getUserById(req.session.userId);
+        if (!user || user.IsAdmin !== 1) {
+            return res.status(403).json({ success: false, error: 'Keine Admin-Berechtigung' });
+        }
+
+        // Validierung der Eingabedaten
+        const { name, beschreibung, preis, tag, allergene, hinweise } = req.body;
+
+        if (!name || !beschreibung || !preis || !tag) {
+            return res.status(400).json({ success: false, error: 'Bitte füllen Sie alle Pflichtfelder aus' });
+        }
+
+        // Erweiterte Datumsvalidierung
+        // 1. Überprüfung, ob das Datum gültig ist
+        const menuDate = new Date(tag);
+        if (isNaN(menuDate.getTime())) {
+            return res.status(400).json({
+                success: false,
+                error: 'Ungültiges Datum'
+            });
+        }
+
+        // 2. Uhrzeit auf Mitternacht setzen für Vergleiche
+        menuDate.setHours(0, 0, 0, 0);
+
+        // 3. Datum darf nicht in der Vergangenheit liegen
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (menuDate < today) {
+            return res.status(400).json({
+                success: false,
+                error: 'Das Datum darf nicht in der Vergangenheit liegen'
+            });
+        }
+
+        // 4. Datum darf nicht zu weit in der Zukunft liegen (z.B. maximal 1 Jahr)
+        const oneYearFromNow = new Date();
+        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+        oneYearFromNow.setHours(0, 0, 0, 0);
+
+        if (menuDate > oneYearFromNow) {
+            return res.status(400).json({
+                success: false,
+                error: 'Das Datum darf nicht mehr als ein Jahr in der Zukunft liegen'
+            });
+        }
+
+        // 5. Optional: Prüfen ob das Datum ein Wochentag ist (falls keine Wochenendmenüs)
+        // const dayOfWeek = menuDate.getDay(); // 0 = Sonntag, 6 = Samstag
+        // if (dayOfWeek === 0 || dayOfWeek === 6) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         error: 'An Wochenenden werden keine Menüs angeboten'
+        //     });
+        // }
+
+        // Neues Menü in der Datenbank erstellen
+        await dbCon.createMenu(req.body);
+
+        res.json({ success: true, message: 'Menü erfolgreich erstellt' });
+    } catch (error) {
+        console.error('Fehler beim Erstellen des Menüs:', error);
+        res.status(500).json({ success: false, error: 'Serverfehler beim Erstellen des Menüs' });
+    }
+});
+
