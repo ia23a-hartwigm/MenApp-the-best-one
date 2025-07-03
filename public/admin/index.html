@@ -5,12 +5,53 @@
     <title>Admin page</title>
     <link rel="stylesheet" href="../style.css">
     <script src="../header.js"></script>
+    <style>
+        .action-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .action-button:hover {
+            background-color: #45a049;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .submit-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
 
 <div class="main-content">
     <h1 id="headerTitle">Admin - Menüs</h1>
+
+    <!-- Neuer Button zum Erstellen eines Menüs -->
+    <button id="createMenuBtn" class="action-button">Neues Menü erstellen</button>
+
     <div id="menu">Lade Daten…</div>
 </div>
 
@@ -121,6 +162,134 @@
             console.error(err);
         }
     }
+
+    // Funktion zum Anzeigen des Formulars für ein neues Menü
+    function showCreateMenuForm() {
+        const modal = document.getElementById('modal');
+        const modalBody = document.getElementById('modal-body');
+
+        modal.classList.remove('hidden');
+
+        // Aktuelles Datum für das Datumseingabefeld
+        const today = new Date();
+        const minDate = today.toISOString().split('T')[0]; // YYYY-MM-DD Format
+
+        // Maximum-Datum (1 Jahr in der Zukunft)
+        const maxDate = new Date();
+        maxDate.setFullYear(maxDate.getFullYear() + 1);
+        const maxDateStr = maxDate.toISOString().split('T')[0];
+
+        // Formular für das neue Menü erstellen
+        modalBody.innerHTML = `
+            <h2>Neues Menü erstellen</h2>
+            <form id="createMenuForm">
+                <div class="form-group">
+                    <label for="menuName">Name des Gerichts:</label>
+                    <input type="text" id="menuName" name="menuName" required maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label for="menuDescription">Beschreibung:</label>
+                    <textarea id="menuDescription" name="menuDescription" rows="3" required maxlength="255"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="menuPrice">Preis (€):</label>
+                    <input type="number" id="menuPrice" name="menuPrice" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="menuDate">Datum:</label>
+                    <input type="date" id="menuDate" name="menuDate" required min="${minDate}" max="${maxDateStr}">
+                    <small class="form-text text-muted">Das Datum muss zwischen heute und einem Jahr in der Zukunft liegen</small>
+                </div>
+                <div class="form-group">
+                    <label for="menuAllergens">Allergene:</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="allergens" value="Gluten"> Gluten</label>
+                        <label><input type="checkbox" name="allergens" value="Laktose"> Laktose</label>
+                        <label><input type="checkbox" name="allergens" value="Nüsse"> Nüsse</label>
+                        <label><input type="checkbox" name="allergens" value="Eier"> Eier</label>
+                        <label><input type="checkbox" name="allergens" value="Soja"> Soja</label>
+                        <label><input type="checkbox" name="allergens" value="Fisch"> Fisch</label>
+                        <label><input type="checkbox" name="allergens" value="Sellerie"> Sellerie</label>
+                    </div>
+                    <small class="form-text text-muted">Wählen Sie alle zutreffenden Allergene aus</small>
+                </div>
+                <div class="form-group">
+                    <label for="menuNotes">Hinweise:</label>
+                    <input type="text" id="menuNotes" name="menuNotes" maxlength="100">
+                    <small class="form-text text-muted">Maximal 100 Zeichen</small>
+                </div>
+                <button type="submit" class="submit-btn">Menü erstellen</button>
+            </form>
+        `;
+
+        // Stylesheet für die Checkbox-Gruppe
+        const style = document.createElement('style');
+        style.textContent = `
+            .checkbox-group {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+            .checkbox-group label {
+                display: flex;
+                align-items: center;
+                margin-right: 10px;
+                font-weight: normal;
+            }
+            .checkbox-group input[type="checkbox"] {
+                margin-right: 5px;
+                width: auto;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Event-Listener für das Formular hinzufügen
+        document.getElementById('createMenuForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            // Allergene aus den ausgewählten Checkboxen sammeln
+            const allergenCheckboxes = document.querySelectorAll('input[name="allergens"]:checked');
+            const selectedAllergene = Array.from(allergenCheckboxes).map(cb => cb.value).join(',');
+
+            const menuData = {
+                name: document.getElementById('menuName').value,
+                beschreibung: document.getElementById('menuDescription').value,
+                preis: document.getElementById('menuPrice').value,
+                tag: document.getElementById('menuDate').value,
+                allergene: selectedAllergene, // Kommagetrennte Liste von Allergenen
+                hinweise: document.getElementById('menuNotes').value
+            };
+
+            console.log('Sende Menüdaten:', menuData);
+
+            try {
+                const response = await fetch('/api/admin/menu/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(menuData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Menü erfolgreich erstellt!');
+                    modal.classList.add('hidden');
+                    loadMenu(); // Menü neu laden, um das neue Gericht anzuzeigen
+                } else {
+                    alert('Fehler beim Erstellen des Menüs: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Fehler beim Erstellen des Menüs:', error);
+                alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+            }
+        });
+    }
+
+    // Event-Listener für den "Neues Menü erstellen"-Button
+    document.getElementById('createMenuBtn').addEventListener('click', showCreateMenuForm);
 
     document.getElementById('closeModal').addEventListener('click', () => {
         document.getElementById('modal').classList.add('hidden');

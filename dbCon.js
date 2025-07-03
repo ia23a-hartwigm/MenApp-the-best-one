@@ -151,6 +151,39 @@ async function getBestellungByUser (userId) {
     }
 }
 
+async function createMenu(menuData) {
+    try {
+        const { name, beschreibung, preis, tag, allergene, hinweise } = menuData;
+
+        // Für MySQL SET-Typ muss allergene eine kommagetrennte Liste von gültigen Werten sein
+        // Die gültigen Werte sind: 'Gluten', 'Laktose', 'Nüsse', 'Eier', 'Soja', 'Fisch', 'Sellerie'
+        let allergenValues = '';
+        if (allergene && allergene.trim()) {
+            // allergene ist bereits eine kommagetrennte Liste von gültigen Werten aus den Checkboxen
+            allergenValues = allergene.trim();
+        }
+
+        const trimmedHinweise = hinweise ? hinweise.substring(0, 100) : '';
+
+        console.log('Speichere in DB:', {
+            name,
+            beschreibung,
+            preis,
+            tag,
+            allergene: allergenValues,
+            hinweise: trimmedHinweise
+        });
+
+        return await executeQuery(
+            'INSERT INTO gerichte (Name, Beschreibung, Preis, Tag, Allergene, Hinweise) VALUES (?, ?, ?, ?, ?, ?)',
+            [name, beschreibung, preis, tag, allergenValues, trimmedHinweise]
+        );
+    } catch (error) {
+        console.error('Error creating new menu:', error);
+        throw error;
+    }
+}
+
 
 
 module.exports = {
@@ -164,7 +197,8 @@ module.exports = {
     getUserById,
     createUser,
     getWarenkorbByUser,
-    getBestellungByUser
+    getBestellungByUser,
+    createMenu // Neue Funktion exportieren
 };
 
 async function executeQuery(sql, params = []) {
