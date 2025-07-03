@@ -75,6 +75,28 @@
         .disabled-btn:hover {
             background-color: #cccccc;
         }
+        /* Admin-Menü Styling hinzufügen */
+        .admin-menu {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .admin-menu a {
+            display: block;
+            padding: 10px 20px;
+            background-color: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .admin-menu a:hover {
+            background-color: #0055aa;
+        }
+        .admin-menu a.active {
+            background-color: #004488;
+        }
     </style>
 </head>
 <body>
@@ -82,6 +104,12 @@
 
 <div class="main-content">
     <h1 id="headerTitle">Admin - Menüs</h1>
+
+    <!-- Admin-Navigationsmenü hinzufügen -->
+    <div class="admin-menu">
+        <a href="/admin/index.html" class="active">Menüs verwalten</a>
+        <a href="/admin/orders.html">Bestellungen verwalten</a>
+    </div>
 
     <!-- Neuer Button zum Erstellen eines Menüs -->
     <button id="createMenuBtn" class="action-button">Neues Menü erstellen</button>

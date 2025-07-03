@@ -65,8 +65,8 @@ async function getMenuForWeek(startDate) {
 
 async function addToCart(userId, menuItemId, menge) {
     try {
-        // Überprüfen, ob bereits ein nicht abgeholter Eintrag existiert
-        const checkSql = 'SELECT ID, menge FROM warenkorb WHERE userID = ? AND gerichtID = ? AND abgeholt = FALSE LIMIT 1';
+        // Überprüfen, ob bereits ein Eintrag existiert
+        const checkSql = 'SELECT ID, menge FROM warenkorb WHERE userID = ? AND gerichtID = ? LIMIT 1';
         const existingItems = await executeQuery(checkSql, [userId, menuItemId]);
 
         if (existingItems && existingItems.length > 0) {
@@ -130,7 +130,7 @@ async function createUser(name, email, passwort) {
 async function getWarenkorbByUser (userId) {
     try {
         return await executeQuery(
-            'SELECT g.Name AS gerichtName, w.menge FROM warenkorb w JOIN gerichte g ON g.ID = w.gerichtID WHERE w.userID = ? AND w.abgeholt = FALSE',
+            'SELECT g.Name AS gerichtName, w.menge FROM warenkorb w JOIN gerichte g ON g.ID = w.gerichtID WHERE w.userID = ?',
             [userId]
         );
     } catch (error) {
@@ -139,15 +139,151 @@ async function getWarenkorbByUser (userId) {
     }
 }
 
-async function getBestellungByUser (userId) {
+// Funktion zum Abrufen aller aktiven Bestellungen
+async function getActiveOrders() {
     try {
-        return await executeQuery(
-            'SELECT g.Name AS gerichtName, w.menge FROM warenkorb w JOIN gerichte g ON g.ID = w.gerichtID WHERE w.userID = ? AND w.abgeholt = True',
+        return await executeQuery(`
+            SELECT b.ID, b.menge, b.bestelltAm, b.bezahlt, 
+                   g.Name as gerichtName, 
+                   u.Name as userName 
+            FROM bestellungen b
+            JOIN gerichte g ON b.gerichtID = g.ID
+            JOIN users u ON b.userID = u.ID
+            WHERE b.abgeholt = 0
+            ORDER BY b.bestelltAm DESC
+        `);
+    } catch (error) {
+        console.error('Error fetching active orders:', error);
+        throw error;
+    }
+}
+
+// Funktion zum Abrufen aller abgeschlossenen Bestellungen
+async function getCompletedOrders() {
+    try {
+        return await executeQuery(`
+            SELECT b.ID, b.menge, b.bestelltAm, b.abgeholtAm, b.bezahlt, b.bezahltAm,
+                   g.Name as gerichtName, 
+                   u.Name as userName 
+            FROM bestellungen b
+            JOIN gerichte g ON b.gerichtID = g.ID
+            JOIN users u ON b.userID = u.ID
+            WHERE b.abgeholt = 1
+            ORDER BY b.abgeholtAm DESC
+            LIMIT 100
+        `);
+    } catch (error) {
+        console.error('Error fetching completed orders:', error);
+        throw error;
+    }
+}
+
+// Funktion zum Markieren einer Bestellung als abgeholt
+async function markOrderAsCompleted(orderId) {
+    try {
+        const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        const result = await executeQuery(
+            'UPDATE bestellungen SET abgeholt = 1, abgeholtAm = ? WHERE ID = ?',
+            [now, orderId]
+        );
+
+        return { success: result.affectedRows > 0 };
+    } catch (error) {
+        console.error('Error marking order as completed:', error);
+        throw error;
+    }
+}
+
+// Funktion zum Markieren einer Bestellung als bezahlt
+async function markOrderAsPaid(orderId) {
+    try {
+        const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        const result = await executeQuery(
+            'UPDATE bestellungen SET bezahlt = 1, bezahltAm = ? WHERE ID = ?',
+            [now, orderId]
+        );
+
+        return { success: result.affectedRows > 0 };
+    } catch (error) {
+        console.error('Error marking order as paid:', error);
+        throw error;
+    }
+}
+
+// Funktion zum Abrufen aktiver (nicht abgeholter) Bestellungen eines Benutzers
+async function getAktiveBestellungenByUser(userId) {
+    try {
+        return await executeQuery(`
+            SELECT g.Name AS gerichtName, b.menge, b.bestelltAm, b.bezahlt 
+            FROM bestellungen b 
+            JOIN gerichte g ON g.ID = b.gerichtID 
+            WHERE b.userID = ? AND b.abgeholt = 0
+            ORDER BY b.bestelltAm DESC
+        `, [userId]);
+    } catch (error) {
+        console.error('Error fetching active orders for user:', error);
+        throw error;
+    }
+}
+
+// Funktion zum Abrufen abgeschlossener (abgeholter) Bestellungen eines Benutzers
+async function getAbgeschlosseneBestellungenByUser(userId) {
+    try {
+        return await executeQuery(`
+            SELECT g.Name AS gerichtName, b.menge, b.abgeholtAm
+            FROM bestellungen b 
+            JOIN gerichte g ON g.ID = b.gerichtID 
+            WHERE b.userID = ? AND b.abgeholt = 1
+            ORDER BY b.abgeholtAm DESC
+        `, [userId]);
+    } catch (error) {
+        console.error('Error fetching completed orders for user:', error);
+        throw error;
+    }
+}
+
+// Neue Funktion zur Erstellung einer Bestellung aus dem Warenkorb
+async function createBestellungFromWarenkorb(userId) {
+    const connection = await pool.getConnection();
+    try {
+        // Transaktion starten
+        await connection.beginTransaction();
+
+        // 1. Warenkorb-Einträge des Benutzers abrufen
+        const warenkorbItems = await connection.query(
+            'SELECT gerichtID, menge FROM warenkorb WHERE userID = ?',
             [userId]
         );
+
+        if (!warenkorbItems[0] || warenkorbItems[0].length === 0) {
+            throw new Error('Der Warenkorb ist leer');
+        }
+
+        // 2. Für jeden Warenkorb-Eintrag eine Bestellung erstellen
+        for (const item of warenkorbItems[0]) {
+            await connection.query(
+                'INSERT INTO bestellungen (gerichtID, menge, userID) VALUES (?, ?, ?)',
+                [item.gerichtID, item.menge, userId]
+            );
+        }
+
+        // 3. Warenkorb des Benutzers leeren
+        await connection.query(
+            'DELETE FROM warenkorb WHERE userID = ?',
+            [userId]
+        );
+
+        // Transaktion abschließen
+        await connection.commit();
+        return { success: true };
     } catch (error) {
-        console.error('Error fetching menu for week:', error);
+        // Bei Fehler: Transaktion zurückrollen
+        await connection.rollback();
+        console.error('Error creating order from cart:', error);
         throw error;
+    } finally {
+        // Verbindung zurückgeben
+        connection.release();
     }
 }
 
@@ -241,7 +377,7 @@ module.exports = {
     getTest,
     getMenu,
     getMenuByDay: getMenuById,
-    getMenuById,  // Direkt die Funktion exportieren
+    getMenuById,
     addToCart,
     removeAllFromCart,
     getMenuForWeek,
@@ -249,10 +385,12 @@ module.exports = {
     getUserById,
     createUser,
     getWarenkorbByUser,
-    getBestellungByUser,
-    createMenu,
-    updateMenu,
-    deleteMenu
+    getActiveOrders,
+    getCompletedOrders,
+    markOrderAsCompleted,
+    markOrderAsPaid,
+    getAktiveBestellungenByUser,
+    getAbgeschlosseneBestellungenByUser
 };
 
 async function executeQuery(sql, params = []) {

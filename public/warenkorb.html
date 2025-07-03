@@ -77,6 +77,25 @@
             padding: 30px;
             color: #6c757d;
         }
+
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .status-pending {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .status-paid {
+            background-color: #17a2b8;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -97,13 +116,33 @@
             </tbody>
         </table>
 
-        <h1>🛒 Meine Bestellungen</h1>
+        <!-- Neuer Button zum Abschließen der Bestellung -->
+        <button id="bestellungAbschliessenBtn" class="btn-bestellen">Bestellung abschließen</button>
+
+        <h1>📋 Aktuelle Bestellungen</h1>
+
+        <table id="aktuelleBestellungenTabelle">
+            <thead>
+            <tr>
+                <th>Gericht</th>
+                <th>Menge</th>
+                <th>Bestellt am</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- JavaScript befüllt hier -->
+            </tbody>
+        </table>
+
+        <h1>📚 Bestellverlauf</h1>
 
         <table id="bestellungTabelle">
             <thead>
             <tr>
                 <th>Gericht</th>
                 <th>Menge</th>
+                <th>Abgeholt am</th>
             </tr>
             </thead>
             <tbody>
@@ -136,10 +175,17 @@
             const daten = await warenkorbRes.json();
             const tbody = document.querySelector("#warenkorbTabelle tbody");
 
+            tbody.innerHTML = ''; // Tabelle leeren
+
             if (daten.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="2" class="leerer-warenkorb">Keine offenen Bestellungen.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="2" class="leerer-warenkorb">Ihr Warenkorb ist leer.</td></tr>';
+                document.getElementById('bestellungAbschliessenBtn').disabled = true;
+                document.getElementById('bestellungAbschliessenBtn').classList.add('disabled-btn');
                 return;
             }
+
+            document.getElementById('bestellungAbschliessenBtn').disabled = false;
+            document.getElementById('bestellungAbschliessenBtn').classList.remove('disabled-btn');
 
             daten.forEach(eintrag => {
                 const tr = document.createElement("tr");
@@ -155,6 +201,68 @@
         }
     }
 
+    // Aktuelle offene Bestellungen laden
+    async function ladeAktuelleBestellungen() {
+        try {
+            const sessionRes = await fetch('/api/session', { credentials: 'include' });
+            const sessionData = await sessionRes.json();
+
+            if (!sessionData.loggedIn || !sessionData.userId) {
+                return;
+            }
+
+            const aktuelleBestellungenRes = await fetch('/api/bestellungen/aktiv', {
+                credentials: 'include'
+            });
+
+            if (!aktuelleBestellungenRes.ok) {
+                throw new Error('Fehler beim Laden der aktuellen Bestellungen');
+            }
+
+            const daten = await aktuelleBestellungenRes.json();
+            const tbody = document.querySelector("#aktuelleBestellungenTabelle tbody");
+
+            tbody.innerHTML = ''; // Tabelle leeren
+
+            if (daten.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="leerer-warenkorb">Keine offenen Bestellungen.</td></tr>';
+                return;
+            }
+
+            daten.forEach(eintrag => {
+                const tr = document.createElement("tr");
+
+                // Datum formatieren
+                const bestelltAm = new Date(eintrag.bestelltAm);
+                const formattedDate = bestelltAm.toLocaleString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                // Status-Label erstellen
+                const statusLabel = eintrag.bezahlt
+                    ? '<span class="status status-paid">Bezahlt</span>'
+                    : '<span class="status status-pending">Offen</span>';
+
+                tr.innerHTML = `
+                    <td>${eintrag.gerichtName}</td>
+                    <td>${eintrag.menge}</td>
+                    <td>${formattedDate}</td>
+                    <td>${statusLabel}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (err) {
+            console.error(err);
+            const tbody = document.querySelector("#aktuelleBestellungenTabelle tbody");
+            tbody.innerHTML = '<tr><td colspan="4" class="leerer-warenkorb">Fehler beim Laden der Daten.</td></tr>';
+        }
+    }
+
+    // Abgeschlossene Bestellungen laden
     async function ladeBestellung() {
         try {
             const sessionRes = await fetch('/api/session', { credentials: 'include' });
@@ -164,37 +272,96 @@
                 return;
             }
 
-            const warenkorbRes = await fetch('/api/bestellungen', {
+            const warenkorbRes = await fetch('/api/bestellungen/abgeschlossen', {
                 credentials: 'include'
             });
 
             if (!warenkorbRes.ok) {
-                throw new Error('Fehler beim Laden des Warenkorbs');
+                throw new Error('Fehler beim Laden der abgeschlossenen Bestellungen');
             }
 
             const daten = await warenkorbRes.json();
             const tbody = document.querySelector("#bestellungTabelle tbody");
 
+            tbody.innerHTML = ''; // Tabelle leeren
+
             if (daten.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="2" class="leerer-warenkorb">Keine offenen Bestellungen.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="leerer-warenkorb">Keine abgeschlossenen Bestellungen.</td></tr>';
                 return;
             }
 
             daten.forEach(eintrag => {
                 const tr = document.createElement("tr");
+
+                // Datum formatieren
+                let abgeholtDate = '-';
+                if (eintrag.abgeholtAm) {
+                    const abgeholtAm = new Date(eintrag.abgeholtAm);
+                    abgeholtDate = abgeholtAm.toLocaleString('de-DE', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                }
+
                 tr.innerHTML = `
                     <td>${eintrag.gerichtName}</td>
                     <td>${eintrag.menge}</td>
+                    <td>${abgeholtDate}</td>
                 `;
                 tbody.appendChild(tr);
             });
         } catch (err) {
             console.error(err);
+            const tbody = document.querySelector("#bestellungTabelle tbody");
+            tbody.innerHTML = '<tr><td colspan="3" class="leerer-warenkorb">Fehler beim Laden der Daten.</td></tr>';
         }
     }
 
-    window.addEventListener("DOMContentLoaded", ladeWarenkorb);
-    window.addEventListener("DOMContentLoaded", ladeBestellung);
+    // Neue Funktion: Bestellung abschließen
+    async function bestellungAbschliessen() {
+        try {
+            const response = await fetch('/api/bestellung/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Fehler beim Abschließen der Bestellung');
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Ihre Bestellung wurde erfolgreich aufgegeben!');
+                // Alle Tabellen neu laden
+                ladeWarenkorb();
+                ladeAktuelleBestellungen();
+                ladeBestellung();
+            } else {
+                throw new Error(result.error || 'Unbekannter Fehler beim Abschließen der Bestellung');
+            }
+        } catch (error) {
+            console.error('Fehler beim Abschließen der Bestellung:', error);
+            alert(`Fehler: ${error.message}`);
+        }
+    }
+
+    // Event-Listener für den "Bestellung abschließen"-Button
+    document.getElementById('bestellungAbschliessenBtn').addEventListener('click', bestellungAbschliessen);
+
+    // Alle Tabellen beim Laden der Seite initialisieren
+    window.addEventListener("DOMContentLoaded", () => {
+        ladeWarenkorb();
+        ladeAktuelleBestellungen();
+        ladeBestellung();
+    });
 </script>
 </body>
 </html>
