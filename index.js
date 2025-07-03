@@ -231,6 +231,30 @@ app.get('/api/bestellungen', async (req, res) => {
     }
 });
 
+// Neue API-Route zum Erstellen einer Bestellung aus dem Warenkorb
+app.post('/api/bestellung/create', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Nicht eingeloggt' });
+    }
+
+    try {
+        const userId = req.session.userId;
+        const result = await dbCon.createBestellungFromWarenkorb(userId);
+
+        if (result.success) {
+            res.json({ success: true, message: 'Bestellung erfolgreich erstellt' });
+        } else {
+            res.status(500).json({ success: false, error: 'Fehler beim Erstellen der Bestellung' });
+        }
+    } catch (error) {
+        console.error('Fehler beim Erstellen der Bestellung:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Serverfehler beim Erstellen der Bestellung'
+        });
+    }
+});
+
 // API-Route um zu prüfen, ob der eingeloggte Benutzer ein Admin ist
 app.get('/api/user/isAdmin', async (req, res) => {
     if (!req.session.userId) {
@@ -466,5 +490,173 @@ app.delete('/api/admin/menu/:id', async (req, res) => {
         console.error('Fehler beim Löschen des Menüs:', error);
         const errorMessage = error.message || 'Serverfehler beim Löschen des Menüs';
         res.status(500).json({ success: false, error: errorMessage });
+    }
+});
+
+// API-Route zum Abrufen aktiver Bestellungen (für Admins)
+app.get('/api/admin/orders/active', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Nicht eingeloggt' });
+    }
+
+    try {
+        // Prüfen, ob der Benutzer Admin ist
+        const user = await dbCon.getUserById(req.session.userId);
+        if (!user || user.IsAdmin !== 1) {
+            return res.status(403).json({ success: false, error: 'Keine Admin-Berechtigung' });
+        }
+
+        // Aktive Bestellungen aus der Datenbank abrufen
+        const orders = await dbCon.getActiveOrders();
+        res.json(orders);
+    } catch (error) {
+        console.error('Fehler beim Abrufen aktiver Bestellungen:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Serverfehler beim Abrufen aktiver Bestellungen'
+        });
+    }
+});
+
+// API-Route zum Abrufen abgeschlossener Bestellungen (für Admins)
+app.get('/api/admin/orders/completed', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Nicht eingeloggt' });
+    }
+
+    try {
+        // Prüfen, ob der Benutzer Admin ist
+        const user = await dbCon.getUserById(req.session.userId);
+        if (!user || user.IsAdmin !== 1) {
+            return res.status(403).json({ success: false, error: 'Keine Admin-Berechtigung' });
+        }
+
+        // Abgeschlossene Bestellungen aus der Datenbank abrufen
+        const orders = await dbCon.getCompletedOrders();
+        res.json(orders);
+    } catch (error) {
+        console.error('Fehler beim Abrufen abgeschlossener Bestellungen:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Serverfehler beim Abrufen abgeschlossener Bestellungen'
+        });
+    }
+});
+
+// API-Route zum Markieren einer Bestellung als abgeholt (für Admins)
+app.post('/api/admin/orders/:id/complete', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Nicht eingeloggt' });
+    }
+
+    try {
+        // Prüfen, ob der Benutzer Admin ist
+        const user = await dbCon.getUserById(req.session.userId);
+        if (!user || user.IsAdmin !== 1) {
+            return res.status(403).json({ success: false, error: 'Keine Admin-Berechtigung' });
+        }
+
+        const orderId = req.params.id;
+
+        // Bestellung als abgeholt markieren
+        const result = await dbCon.markOrderAsCompleted(orderId);
+
+        if (result.success) {
+            res.json({ success: true, message: 'Bestellung erfolgreich als abgeholt markiert' });
+        } else {
+            res.status(404).json({ success: false, error: 'Bestellung nicht gefunden' });
+        }
+    } catch (error) {
+        console.error('Fehler beim Markieren der Bestellung als abgeholt:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Serverfehler beim Aktualisieren der Bestellung'
+        });
+    }
+});
+
+// API-Route zum Markieren einer Bestellung als bezahlt (für Admins)
+app.post('/api/admin/orders/:id/pay', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Nicht eingeloggt' });
+    }
+
+    try {
+        // Prüfen, ob der Benutzer Admin ist
+        const user = await dbCon.getUserById(req.session.userId);
+        if (!user || user.IsAdmin !== 1) {
+            return res.status(403).json({ success: false, error: 'Keine Admin-Berechtigung' });
+        }
+
+        const orderId = req.params.id;
+
+        // Bestellung als bezahlt markieren
+        const result = await dbCon.markOrderAsPaid(orderId);
+
+        if (result.success) {
+            res.json({ success: true, message: 'Bestellung erfolgreich als bezahlt markiert' });
+        } else {
+            res.status(404).json({ success: false, error: 'Bestellung nicht gefunden' });
+        }
+    } catch (error) {
+        console.error('Fehler beim Markieren der Bestellung als bezahlt:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Serverfehler beim Aktualisieren der Bestellung'
+        });
+    }
+});
+
+// API-Route zum Abrufen aktiver (nicht abgeholter) Bestellungen eines Benutzers
+app.get('/api/bestellungen/aktiv', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, message: 'Nicht eingeloggt' });
+    }
+
+    try {
+        const userId = req.session.userId;
+        const result = await dbCon.getAktiveBestellungenByUser(userId);
+        res.json(result);
+    } catch (error) {
+        console.error('Fehler beim Abrufen der aktiven Bestellungen:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Serverfehler beim Abrufen der aktiven Bestellungen'
+        });
+    }
+});
+
+// API-Route zum Abrufen abgeschlossener (abgeholter) Bestellungen eines Benutzers
+app.get('/api/bestellungen/abgeschlossen', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, message: 'Nicht eingeloggt' });
+    }
+
+    try {
+        const userId = req.session.userId;
+        const result = await dbCon.getAbgeschlosseneBestellungenByUser(userId);
+        res.json(result);
+    } catch (error) {
+        console.error('Fehler beim Abrufen der abgeschlossenen Bestellungen:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Serverfehler beim Abrufen der abgeschlossenen Bestellungen'
+        });
+    }
+});
+
+// Bestehende Route für alle Bestellungen beibehalten (für Kompatibilität)
+app.get('/api/bestellungen', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, message: 'Nicht eingeloggt' });
+    }
+
+    try {
+        const userId = req.session.userId;
+        const result = await dbCon.getBestellungByUser(userId);
+        res.json(result); // Array von { gerichtName, menge }
+    } catch (error) {
+        console.error('Fehler beim Abrufen des Warenkorbs:', error);
+        res.status(500).json({ success: false, message: 'Serverfehler beim Abrufen des Warenkorbs' });
     }
 });
