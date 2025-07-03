@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <li><a href="/index.html">Speiseplan</a></li>
             <li><a href="/warenkorb.html">Warenkorb</a></li>
             <li><a href="/login/login.html">Login</a></li>
-            <li id="adminLink" style="display: none;"><a href="/admin/admin.html">Admin</a></li>
+            <li id="adminLink" style="display: none;"><a href="/admin">Admin</a></li>
         </ul>
     </nav>`;
 
@@ -41,6 +41,7 @@ function markActiveNavItem() {
     });
 }
 
+
 // Prüft den Login-Status
 async function checkLoginStatus() {
     try {
@@ -60,11 +61,35 @@ async function checkLoginStatus() {
             const userNameElement = document.getElementById('userName');
 
             userInfo.style.display = 'inline-block';
-            userNameElement.textContent = data.userName || data.email;
 
-            // Admin-Link anzeigen, wenn Benutzer Admin-Rechte hat
-            if (data.isAdmin) {
-                document.getElementById('adminLink').style.display = 'block';
+            // Benutzernamen abrufen
+            try {
+                const nameResponse = await fetch('/api/user/name', {
+                    credentials: 'include'
+                });
+                if (nameResponse.ok) {
+                    const nameData = await nameResponse.json();
+                    if (nameData.success) {
+                        userNameElement.textContent = nameData.name;
+                    }
+                }
+            } catch (error) {
+                console.error('Fehler beim Abrufen des Benutzernamens:', error);
+            }
+
+            // Admin-Status prüfen
+            try {
+                const adminResponse = await fetch('/api/user/isAdmin', {
+                    credentials: 'include'
+                });
+                if (adminResponse.ok) {
+                    const adminData = await adminResponse.json();
+                    if (adminData.success && adminData.isAdmin) {
+                        document.getElementById('adminLink').style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('Fehler beim Prüfen der Admin-Rechte:', error);
             }
         }
     } catch (error) {
