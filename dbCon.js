@@ -390,7 +390,11 @@ module.exports = {
     markOrderAsCompleted,
     markOrderAsPaid,
     getAktiveBestellungenByUser,
-    getAbgeschlosseneBestellungenByUser
+    getAbgeschlosseneBestellungenByUser,
+    createBestellungFromWarenkorb,
+    createMenu,
+    updateMenu,
+    deleteMenu
 };
 
 async function executeQuery(sql, params = []) {
