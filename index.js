@@ -32,6 +32,23 @@ app.get('/api/test', async (req, res) => {
 })
 
 
+
+app.get('/api/admin/menu', async (req, res) => {
+    try {
+        // startDate is date.now but in javascript format
+        let startDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        if (!startDate) {
+            const today = new Date();
+            startDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
+        }
+        const menu = await dbCon.getMenu(startDate);
+        res.json(menu);
+    } catch (error) {
+        res.status(500).json({success: false, error: 'Fehler beim Abrufen des Wochenmenüs'});
+    }
+});
+
+
 app.get('/api/menu/week/:startDate?', async (req, res) => {
     try {
         let startDate = req.params.startDate;
@@ -214,4 +231,42 @@ app.get('/api/bestellungen', async (req, res) => {
     }
 });
 
+// API-Route um zu prüfen, ob der eingeloggte Benutzer ein Admin ist
+app.get('/api/user/isAdmin', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, message: 'Nicht eingeloggt' });
+    }
 
+    try {
+        const user = await dbCon.getUserById(req.session.userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'Benutzer nicht gefunden' });
+        }
+
+        res.json({ success: true, isAdmin: user.IsAdmin === 1 });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Serverfehler beim Prüfen der Admin-Rechte' });
+    }
+});
+
+// Middleware zum Schutz von Admin-Routen
+function adminAuthMiddleware(req, res, next) {
+    if (!req.session.userId) {
+        return res.redirect('/index.html');
+    }
+
+    dbCon.getUserById(req.session.userId)
+        .then(user => {
+            if (!user || !user.IsAdmin) {
+                return res.redirect('/index.html');
+            }
+            next();
+        })
+        .catch(error => {
+            console.error('Fehler bei Admin-Authentifizierung:', error);
+            res.redirect('/index.html');
+        });
+}
+
+// Anwendung der Middleware auf Admin-Routen
+app.use('/admin', adminAuthMiddleware);

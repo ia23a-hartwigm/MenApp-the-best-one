@@ -17,7 +17,8 @@ CREATE TABLE users (
     ID INT PRIMARY KEY AUTO_INCREMENT,
     Name VARCHAR(100) NOT NULL,
     Email VARCHAR(100) NOT NULL UNIQUE,
-    Passwort VARCHAR(100) NOT NULL
+    Passwort VARCHAR(100) NOT NULL,
+    IsAdmin BOOLEAN DEFAULT FALSE
 );
 
 INSERT INTO gerichte (name, beschreibung, preis, allergene, hinweise, tag) VALUES

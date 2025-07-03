@@ -36,6 +36,20 @@ async function getMenuById(id) {
     }
 }
 
+async function getMenu(startDate) {
+    try {
+        return await executeQuery(
+            'SELECT * FROM gerichte WHERE Tag >= ? AND Tag ORDER BY Tag ASC',
+            [startDate]
+
+        );
+    } catch (error) {
+        console.error('Error fetching menu for week:', error);
+        throw error;
+    }
+}
+
+
 async function getMenuForWeek(startDate) {
     try {
         return await executeQuery(
@@ -123,7 +137,7 @@ async function getWarenkorbByUser (userId) {
         console.error('Error fetching menu for week:', error);
         throw error;
     }
-};
+}
 
 async function getBestellungByUser (userId) {
     try {
@@ -135,12 +149,13 @@ async function getBestellungByUser (userId) {
         console.error('Error fetching menu for week:', error);
         throw error;
     }
-};
+}
 
 
 
 module.exports = {
     getTest,
+    getMenu,
     getMenuByDay: getMenuById,
     addToCart,
     removeAllFromCart,
