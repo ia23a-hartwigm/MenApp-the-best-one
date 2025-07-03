@@ -184,12 +184,64 @@ async function createMenu(menuData) {
     }
 }
 
+async function updateMenu(menuId, menuData) {
+    try {
+        const { name, beschreibung, preis, tag, allergene, hinweise } = menuData;
 
+        // Für MySQL SET-Typ muss allergene eine kommagetrennte Liste von gültigen Werten sein
+        let allergenValues = '';
+        if (allergene && allergene.trim()) {
+            allergenValues = allergene.trim();
+        }
+
+        const trimmedHinweise = hinweise ? hinweise.substring(0, 100) : '';
+
+        console.log('Aktualisiere in DB:', {
+            id: menuId,
+            name,
+            beschreibung,
+            preis,
+            tag,
+            allergene: allergenValues,
+            hinweise: trimmedHinweise
+        });
+
+        return await executeQuery(
+            'UPDATE gerichte SET Name = ?, Beschreibung = ?, Preis = ?, Tag = ?, Allergene = ?, Hinweise = ? WHERE ID = ?',
+            [name, beschreibung, preis, tag, allergenValues, trimmedHinweise, menuId]
+        );
+    } catch (error) {
+        console.error('Error updating menu:', error);
+        throw error;
+    }
+}
+
+async function deleteMenu(menuId) {
+    try {
+        console.log('Lösche Menü aus DB:', menuId);
+
+        // Prüfen, ob das Menü in einem Warenkorb verwendet wird
+        const cartItems = await executeQuery(
+            'SELECT COUNT(*) as count FROM warenkorb WHERE gerichtID = ?',
+            [menuId]
+        );
+
+        if (cartItems && cartItems[0] && cartItems[0].count > 0) {
+            throw new Error('Dieses Menü kann nicht gelöscht werden, da es bereits in Warenkörben verwendet wird.');
+        }
+
+        return await executeQuery('DELETE FROM gerichte WHERE ID = ?', [menuId]);
+    } catch (error) {
+        console.error('Error deleting menu:', error);
+        throw error;
+    }
+}
 
 module.exports = {
     getTest,
     getMenu,
     getMenuByDay: getMenuById,
+    getMenuById,  // Direkt die Funktion exportieren
     addToCart,
     removeAllFromCart,
     getMenuForWeek,
@@ -198,7 +250,9 @@ module.exports = {
     createUser,
     getWarenkorbByUser,
     getBestellungByUser,
-    createMenu // Neue Funktion exportieren
+    createMenu,
+    updateMenu,
+    deleteMenu
 };
 
 async function executeQuery(sql, params = []) {
