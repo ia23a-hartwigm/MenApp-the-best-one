@@ -249,40 +249,52 @@ app.get('/api/user/isAdmin', async (req, res) => {
     }
 });
 
-// Middleware zum Schutz von Admin-Routen
+// Verbesserte Middleware zum Schutz von Admin-Routen (API und statische Inhalte)
 function adminAuthMiddleware(req, res, next) {
     if (!req.session.userId) {
-        return res.redirect('/index.html');
+        // Je nach Anfrageart unterschiedlich antworten
+        if (req.xhr || req.path.startsWith('/api/')) {
+            return res.status(401).json({ success: false, error: 'Nicht eingeloggt' });
+        } else {
+            return res.redirect('/index.html');
+        }
     }
 
     dbCon.getUserById(req.session.userId)
         .then(user => {
-            if (!user || !user.IsAdmin) {
-                return res.redirect('/index.html');
+            if (!user || user.IsAdmin !== 1) {
+                if (req.xhr || req.path.startsWith('/api/')) {
+                    return res.status(403).json({ success: false, error: 'Keine Admin-Berechtigung' });
+                } else {
+                    return res.redirect('/index.html');
+                }
             }
             next();
         })
         .catch(error => {
             console.error('Fehler bei Admin-Authentifizierung:', error);
-            res.redirect('/index.html');
+            if (req.xhr || req.path.startsWith('/api/')) {
+                return res.status(500).json({ success: false, error: 'Serverfehler bei der Authentifizierung' });
+            } else {
+                res.redirect('/index.html');
+            }
         });
 }
 
-// Anwendung der Middleware auf Admin-Routen
+// Anwendung der Middleware auf statische Admin-Routen
 app.use('/admin', adminAuthMiddleware);
+
+// Anwendung der Middleware auf alle Admin-API-Endpunkte
+app.use('/api/admin', adminAuthMiddleware);
 
 // Neuer API-Endpunkt zum Erstellen eines Menüs (nur für Admins)
 app.post('/api/admin/menu/create', async (req, res) => {
-    // Prüfen, ob der Benutzer eingeloggt und Admin ist
-    if (!req.session.userId) {
-        return res.status(401).json({ success: false, error: 'Nicht eingeloggt' });
-    }
-
     try {
-        const user = await dbCon.getUserById(req.session.userId);
-        if (!user || user.IsAdmin !== 1) {
-            return res.status(403).json({ success: false, error: 'Keine Admin-Berechtigung' });
-        }
+        // Da die Middleware bereits die Admin-Berechtigung geprüft hat,
+        // können wir diese redundanten Prüfungen entfernen:
+        // if (!req.session.userId) { ... }
+        // const user = await dbCon.getUserById(req.session.userId);
+        // if (!user || user.IsAdmin !== 1) { ... }
 
         // Validierung der Eingabedaten
         const { name, beschreibung, preis, tag, allergene, hinweise } = req.body;
@@ -346,3 +358,113 @@ app.post('/api/admin/menu/create', async (req, res) => {
     }
 });
 
+// API-Route zum Aktualisieren eines Menüs (nur für Admins)
+app.put('/api/admin/menu/:id', async (req, res) => {
+    try {
+        // Redundante Admin-Prüfungen entfernen, da die Middleware das bereits erledigt hat
+
+        const menuId = req.params.id;
+
+        // Überprüfen, ob das Menü existiert
+        const menuExists = await dbCon.getMenuById(menuId);
+        if (!menuExists || menuExists.length === 0) {
+            return res.status(404).json({ success: false, error: 'Menü nicht gefunden' });
+        }
+
+        // Überprüfen, ob das Menü in der Vergangenheit liegt
+        const menuDate = new Date(menuExists[0].Tag);
+        menuDate.setHours(0, 0, 0, 0);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (menuDate < today) {
+            return res.status(400).json({
+                success: false,
+                error: 'Menüs in der Vergangenheit können nicht bearbeitet werden'
+            });
+        }
+
+        // Validierung der Eingabedaten
+        const { name, beschreibung, preis, tag, allergene, hinweise } = req.body;
+
+        if (!name || !beschreibung || !preis || !tag) {
+            return res.status(400).json({ success: false, error: 'Bitte füllen Sie alle Pflichtfelder aus' });
+        }
+
+        // Erweiterte Datumsvalidierung für das neue Datum
+        const newMenuDate = new Date(tag);
+        if (isNaN(newMenuDate.getTime())) {
+            return res.status(400).json({
+                success: false,
+                error: 'Ungültiges Datum'
+            });
+        }
+
+        newMenuDate.setHours(0, 0, 0, 0);
+
+        if (newMenuDate < today) {
+            return res.status(400).json({
+                success: false,
+                error: 'Das Datum darf nicht in der Vergangenheit liegen'
+            });
+        }
+
+        const oneYearFromNow = new Date();
+        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+        oneYearFromNow.setHours(0, 0, 0, 0);
+
+        if (newMenuDate > oneYearFromNow) {
+            return res.status(400).json({
+                success: false,
+                error: 'Das Datum darf nicht mehr als ein Jahr in der Zukunft liegen'
+            });
+        }
+
+        // Menü in der Datenbank aktualisieren
+        await dbCon.updateMenu(menuId, req.body);
+
+        res.json({ success: true, message: 'Menü erfolgreich aktualisiert' });
+    } catch (error) {
+        console.error('Fehler beim Aktualisieren des Menüs:', error);
+        res.status(500).json({ success: false, error: 'Serverfehler beim Aktualisieren des Menüs' });
+    }
+});
+
+// API-Route zum Löschen eines Menüs (nur für Admins)
+app.delete('/api/admin/menu/:id', async (req, res) => {
+    try {
+        // Redundante Admin-Prüfungen entfernen, da die Middleware das bereits erledigt hat
+
+        const menuId = req.params.id;
+
+        // Überprüfen, ob das Menü existiert
+        const menuExists = await dbCon.getMenuById(menuId);
+        if (!menuExists || menuExists.length === 0) {
+            return res.status(404).json({ success: false, error: 'Menü nicht gefunden' });
+        }
+
+        // Überprüfen, ob das Menü in der Vergangenheit liegt
+        const menuDate = new Date(menuExists[0].Tag);
+        menuDate.setHours(0, 0, 0, 0);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (menuDate < today) {
+            return res.status(400).json({
+                success: false,
+                error: 'Menüs in der Vergangenheit können nicht gelöscht werden'
+            });
+        }
+
+        // Menü aus der Datenbank löschen
+        await dbCon.deleteMenu(menuId);
+
+        res.json({ success: true, message: 'Menü erfolgreich gelöscht' });
+    } catch (error) {
+        console.error('Fehler beim Löschen des Menüs:', error);
+        const errorMessage = error.message || 'Serverfehler beim Löschen des Menüs';
+        res.status(500).json({ success: false, error: errorMessage });
+    }
+});

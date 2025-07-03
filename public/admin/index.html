@@ -41,6 +41,40 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        .meal-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .edit-btn, .delete-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .edit-btn {
+            background-color: #4c90af;
+            color: white;
+        }
+        .edit-btn:hover {
+            background-color: #3a7a96;
+        }
+        .delete-btn {
+            background-color: #af4c4c;
+            color: white;
+        }
+        .delete-btn:hover {
+            background-color: #963a3a;
+        }
+        .disabled-btn {
+            background-color: #cccccc;
+            color: #666666;
+            cursor: not-allowed;
+        }
+        .disabled-btn:hover {
+            background-color: #cccccc;
+        }
     </style>
 </head>
 <body>
@@ -85,6 +119,10 @@
 
             const weekdaysDe = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 
+            // Aktuelles Datum für Vergleiche (ohne Uhrzeit)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
             for (const dateStr of sortedDates) {
                 const date = new Date(dateStr);
                 const weekdayName = weekdaysDe[date.getDay()] || dateStr;
@@ -98,6 +136,9 @@
                 const section = document.createElement('div');
                 section.className = 'day-section';
                 section.innerHTML = `<h2>${weekdayName} (${formattedDate})</h2>`;
+
+                // Überprüfen, ob das Datum in der Zukunft liegt
+                const isFutureDate = date >= today;
 
                 groupedByDate[dateStr].forEach(meal => {
                     const mealEl = document.createElement('div');
@@ -114,6 +155,18 @@
     <div class="notes">${meal.Hinweise || ''}</div>
   </div>
   <div class="meal-price">${meal.Preis} €</div>
+  <div class="meal-actions">
+    <button class="edit-btn ${!isFutureDate ? 'disabled-btn' : ''}"
+            ${!isFutureDate ? 'disabled' : ''}
+            onclick="event.stopPropagation(); ${isFutureDate ? `showEditMenuForm(${meal.ID})` : ''}">
+      Bearbeiten
+    </button>
+    <button class="delete-btn ${!isFutureDate ? 'disabled-btn' : ''}"
+            ${!isFutureDate ? 'disabled' : ''}
+            onclick="event.stopPropagation(); ${isFutureDate ? `confirmDeleteMenu(${meal.ID})` : ''}">
+      Löschen
+    </button>
+  </div>
   <br>
 `;
 
@@ -288,6 +341,159 @@
         });
     }
 
+    // Funktion zum Anzeigen des Bearbeitungsformulars für ein Menü
+    async function showEditMenuForm(mealId) {
+        const modal = document.getElementById('modal');
+        const modalBody = document.getElementById('modal-body');
+
+        modal.classList.remove('hidden');
+        modalBody.innerHTML = 'Lade Daten...';
+
+        try {
+            // Menüdaten abrufen
+            const response = await fetch(`/api/menu/id/${mealId}`);
+            const data = await response.json();
+
+            if (!Array.isArray(data) || data.length === 0) {
+                modalBody.innerHTML = 'Gericht nicht gefunden.';
+                return;
+            }
+
+            const meal = data[0];
+
+            // Aktuelles Datum und maximales Datum (1 Jahr in der Zukunft) für Datumsbegrenzung
+            const today = new Date();
+            const minDate = today.toISOString().split('T')[0];
+
+            const maxDate = new Date();
+            maxDate.setFullYear(maxDate.getFullYear() + 1);
+            const maxDateStr = maxDate.toISOString().split('T')[0];
+
+            // Datum aus der Datenbank in YYYY-MM-DD Format konvertieren
+            const mealDate = meal.Tag.split('T')[0];
+
+            // Allergene aufteilen
+            const selectedAllergenes = meal.Allergene ? meal.Allergene.split(',').map(a => a.trim()) : [];
+
+            modalBody.innerHTML = `
+                <h2>Menü bearbeiten</h2>
+                <form id="editMenuForm">
+                    <input type="hidden" id="menuId" value="${meal.ID}">
+                    <div class="form-group">
+                        <label for="menuName">Name des Gerichts:</label>
+                        <input type="text" id="menuName" name="menuName" required maxlength="100" value="${meal.Name}">
+                    </div>
+                    <div class="form-group">
+                        <label for="menuDescription">Beschreibung:</label>
+                        <textarea id="menuDescription" name="menuDescription" rows="3" required maxlength="255">${meal.Beschreibung}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="menuPrice">Preis (€):</label>
+                        <input type="number" id="menuPrice" name="menuPrice" step="0.01" required value="${meal.Preis}">
+                    </div>
+                    <div class="form-group">
+                        <label for="menuDate">Datum:</label>
+                        <input type="date" id="menuDate" name="menuDate" required min="${minDate}" max="${maxDateStr}" value="${mealDate}">
+                        <small class="form-text text-muted">Das Datum muss zwischen heute und einem Jahr in der Zukunft liegen</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="menuAllergens">Allergene:</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="allergens" value="Gluten" ${selectedAllergenes.includes('Gluten') ? 'checked' : ''}> Gluten</label>
+                            <label><input type="checkbox" name="allergens" value="Laktose" ${selectedAllergenes.includes('Laktose') ? 'checked' : ''}> Laktose</label>
+                            <label><input type="checkbox" name="allergens" value="Nüsse" ${selectedAllergenes.includes('Nüsse') ? 'checked' : ''}> Nüsse</label>
+                            <label><input type="checkbox" name="allergens" value="Eier" ${selectedAllergenes.includes('Eier') ? 'checked' : ''}> Eier</label>
+                            <label><input type="checkbox" name="allergens" value="Soja" ${selectedAllergenes.includes('Soja') ? 'checked' : ''}> Soja</label>
+                            <label><input type="checkbox" name="allergens" value="Fisch" ${selectedAllergenes.includes('Fisch') ? 'checked' : ''}> Fisch</label>
+                            <label><input type="checkbox" name="allergens" value="Sellerie" ${selectedAllergenes.includes('Sellerie') ? 'checked' : ''}> Sellerie</label>
+                        </div>
+                        <small class="form-text text-muted">Wählen Sie alle zutreffenden Allergene aus</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="menuNotes">Hinweise:</label>
+                        <input type="text" id="menuNotes" name="menuNotes" maxlength="100" value="${meal.Hinweise || ''}">
+                        <small class="form-text text-muted">Maximal 100 Zeichen</small>
+                    </div>
+                    <button type="submit" class="submit-btn">Änderungen speichern</button>
+                </form>
+            `;
+
+            // Event-Listener für das Bearbeitungsformular
+            document.getElementById('editMenuForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                // Allergene aus den ausgewählten Checkboxen sammeln
+                const allergenCheckboxes = document.querySelectorAll('input[name="allergens"]:checked');
+                const selectedAllergene = Array.from(allergenCheckboxes).map(cb => cb.value).join(',');
+
+                const menuId = document.getElementById('menuId').value;
+                const menuData = {
+                    name: document.getElementById('menuName').value,
+                    beschreibung: document.getElementById('menuDescription').value,
+                    preis: document.getElementById('menuPrice').value,
+                    tag: document.getElementById('menuDate').value,
+                    allergene: selectedAllergene,
+                    hinweise: document.getElementById('menuNotes').value
+                };
+
+                try {
+                    const response = await fetch(`/api/admin/menu/${menuId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(menuData)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('Menü erfolgreich aktualisiert!');
+                        modal.classList.add('hidden');
+                        loadMenu(); // Menüliste aktualisieren
+                    } else {
+                        alert('Fehler beim Aktualisieren des Menüs: ' + result.error);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Aktualisieren des Menüs:', error);
+                    alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+                }
+            });
+
+        } catch (error) {
+            console.error('Fehler beim Laden des Menüs:', error);
+            modalBody.innerHTML = 'Fehler beim Laden des Menüs. Bitte versuchen Sie es erneut.';
+        }
+    }
+
+    // Funktion zur Bestätigung des Löschens eines Menüs
+    function confirmDeleteMenu(mealId) {
+        if (confirm('Sind Sie sicher, dass Sie dieses Menü löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+            deleteMenu(mealId);
+        }
+    }
+
+    // Funktion zum Löschen eines Menüs
+    async function deleteMenu(mealId) {
+        try {
+            const response = await fetch(`/api/admin/menu/${mealId}`, {
+                method: 'DELETE'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Menü erfolgreich gelöscht!');
+                loadMenu(); // Menüliste aktualisieren
+            } else {
+                alert('Fehler beim Löschen des Menüs: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Fehler beim Löschen des Menüs:', error);
+            alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+        }
+    }
+
     // Event-Listener für den "Neues Menü erstellen"-Button
     document.getElementById('createMenuBtn').addEventListener('click', showCreateMenuForm);
 
@@ -339,7 +545,7 @@
         }
     }
 
-    // In public/admin/index.html einfügen
+    // Diese Prüfung bleibt als zusätzliche Frontend-Sicherheitsebene
     document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await fetch('/api/user/isAdmin');
