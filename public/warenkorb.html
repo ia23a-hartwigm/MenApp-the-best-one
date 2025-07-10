@@ -96,6 +96,25 @@
             background-color: #17a2b8;
             color: white;
         }
+
+        .order-details {
+            margin-top: 8px;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .order-item-name {
+            flex: 1;
+        }
+
+        .order-item-quantity {
+            margin-left: 15px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -124,8 +143,7 @@
         <table id="aktuelleBestellungenTabelle">
             <thead>
             <tr>
-                <th>Gericht</th>
-                <th>Menge</th>
+                <th>Bestellung</th>
                 <th>Bestellt am</th>
                 <th>Status</th>
             </tr>
@@ -140,8 +158,7 @@
         <table id="bestellungTabelle">
             <thead>
             <tr>
-                <th>Gericht</th>
-                <th>Menge</th>
+                <th>Bestellung</th>
                 <th>Abgeholt am</th>
             </tr>
             </thead>
@@ -225,7 +242,7 @@
             tbody.innerHTML = ''; // Tabelle leeren
 
             if (daten.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="leerer-warenkorb">Keine offenen Bestellungen.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="leerer-warenkorb">Keine offenen Bestellungen.</td></tr>';
                 return;
             }
 
@@ -247,9 +264,24 @@
                     ? '<span class="status status-paid">Bezahlt</span>'
                     : '<span class="status status-pending">Offen</span>';
 
+                // Für die Detailansicht der Bestellungen
+                const gerichte = eintrag.gerichtListe.split(', ');
+                const mengen = eintrag.mengenListe.split(', ');
+
+                // Erstellen der Detailansicht mit jedem Gericht und der entsprechenden Menge
+                let detailsHTML = '<div class="order-details">';
+                for (let i = 0; i < gerichte.length; i++) {
+                    detailsHTML += `
+                        <div class="order-item">
+                            <span class="order-item-name">${gerichte[i]}</span>
+                            <span class="order-item-quantity">${mengen[i]}x</span>
+                        </div>
+                    `;
+                }
+                detailsHTML += '</div>';
+
                 tr.innerHTML = `
-                    <td>${eintrag.gerichtName}</td>
-                    <td>${eintrag.menge}</td>
+                    <td>${detailsHTML}</td>
                     <td>${formattedDate}</td>
                     <td>${statusLabel}</td>
                 `;
@@ -258,7 +290,7 @@
         } catch (err) {
             console.error(err);
             const tbody = document.querySelector("#aktuelleBestellungenTabelle tbody");
-            tbody.innerHTML = '<tr><td colspan="4" class="leerer-warenkorb">Fehler beim Laden der Daten.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" class="leerer-warenkorb">Fehler beim Laden der Daten.</td></tr>';
         }
     }
 
@@ -286,7 +318,7 @@
             tbody.innerHTML = ''; // Tabelle leeren
 
             if (daten.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="leerer-warenkorb">Keine abgeschlossenen Bestellungen.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="2" class="leerer-warenkorb">Keine abgeschlossenen Bestellungen.</td></tr>';
                 return;
             }
 
@@ -306,9 +338,24 @@
                     });
                 }
 
+                // Für die Detailansicht der Bestellungen
+                const gerichte = eintrag.gerichtListe.split(', ');
+                const mengen = eintrag.mengenListe.split(', ');
+
+                // Erstellen der Detailansicht mit jedem Gericht und der entsprechenden Menge
+                let detailsHTML = '<div class="order-details">';
+                for (let i = 0; i < gerichte.length; i++) {
+                    detailsHTML += `
+                        <div class="order-item">
+                            <span class="order-item-name">${gerichte[i]}</span>
+                            <span class="order-item-quantity">${mengen[i]}x</span>
+                        </div>
+                    `;
+                }
+                detailsHTML += '</div>';
+
                 tr.innerHTML = `
-                    <td>${eintrag.gerichtName}</td>
-                    <td>${eintrag.menge}</td>
+                    <td>${detailsHTML}</td>
                     <td>${abgeholtDate}</td>
                 `;
                 tbody.appendChild(tr);
@@ -316,7 +363,7 @@
         } catch (err) {
             console.error(err);
             const tbody = document.querySelector("#bestellungTabelle tbody");
-            tbody.innerHTML = '<tr><td colspan="3" class="leerer-warenkorb">Fehler beim Laden der Daten.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="2" class="leerer-warenkorb">Fehler beim Laden der Daten.</td></tr>';
         }
     }
 

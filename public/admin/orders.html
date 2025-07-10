@@ -173,6 +173,27 @@
         .admin-menu a.active {
             background-color: #004488;
         }
+
+        .order-details {
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: #495057;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .order-item-name {
+            flex: 1;
+        }
+
+        .order-item-quantity {
+            margin-left: 15px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -190,10 +211,8 @@
         <table id="activeOrdersTable">
             <thead>
                 <tr>
-                    <th>Bestell-ID</th>
+                    <th>Bestellung</th>
                     <th>Benutzer</th>
-                    <th>Gericht</th>
-                    <th>Menge</th>
                     <th>Bestellt am</th>
                     <th>Status</th>
                     <th>Aktionen</th>
@@ -202,7 +221,7 @@
             <tbody>
                 <!-- JavaScript befüllt hier die aktiven Bestellungen -->
                 <tr>
-                    <td colspan="7" class="empty-table">Lade Bestellungen...</td>
+                    <td colspan="5" class="empty-table">Lade Bestellungen...</td>
                 </tr>
             </tbody>
         </table>
@@ -211,10 +230,8 @@
         <table id="completedOrdersTable">
             <thead>
                 <tr>
-                    <th>Bestell-ID</th>
+                    <th>Bestellung</th>
                     <th>Benutzer</th>
-                    <th>Gericht</th>
-                    <th>Menge</th>
                     <th>Bestellt am</th>
                     <th>Abgeholt am</th>
                     <th>Bezahlt</th>
@@ -223,7 +240,7 @@
             <tbody>
                 <!-- JavaScript befüllt hier die abgeschlossenen Bestellungen -->
                 <tr>
-                    <td colspan="7" class="empty-table">Lade Bestellungen...</td>
+                    <td colspan="5" class="empty-table">Lade Bestellungen...</td>
                 </tr>
             </tbody>
         </table>
@@ -277,7 +294,7 @@
         const tableBody = document.querySelector('#activeOrdersTable tbody');
 
         if (!orders || orders.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="7" class="empty-table">Keine aktiven Bestellungen vorhanden</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" class="empty-table">Keine aktiven Bestellungen vorhanden</td></tr>';
             return;
         }
 
@@ -301,16 +318,37 @@
                 ? '<span class="status status-paid">Bezahlt</span>'
                 : '<span class="status status-pending">Offen</span>';
 
+            // Für die Detailansicht der Bestellungen - mit Sicherheitsprüfungen
+            const gerichte = order.gerichtListe ? order.gerichtListe.split(', ') : [];
+            const mengen = order.mengenListe ? order.mengenListe.split(', ') : [];
+
+            // Sicherstellen, dass bestellIDs ein String ist, bevor split aufgerufen wird
+            const bestellIDsStr = order.bestellIDs ? String(order.bestellIDs) : '';
+            const bestellIDs = bestellIDsStr.split(',');
+
+            // Erstellen der Detailansicht mit jedem Gericht und der entsprechenden Menge
+            let detailsHTML = '<div class="order-details">';
+            for (let i = 0; i < gerichte.length; i++) {
+                detailsHTML += `
+                    <div class="order-item">
+                        <span class="order-item-name">${gerichte[i]}</span>
+                        <span class="order-item-quantity">${i < mengen.length ? mengen[i] : '1'}x</span>
+                    </div>
+                `;
+            }
+            detailsHTML += '</div>';
+
+            // Wir verwenden die erste Bestellung-ID für die Aktionen
+            const firstOrderId = bestellIDs.length > 0 ? bestellIDs[0].trim() : '';
+
             row.innerHTML = `
-                <td>${order.ID}</td>
+                <td>${detailsHTML}</td>
                 <td>${order.userName}</td>
-                <td>${order.gerichtName}</td>
-                <td>${order.menge}</td>
                 <td>${formattedDate}</td>
                 <td>${statusLabel}</td>
                 <td>
-                    <button class="action-btn complete-btn" onclick="markAsCompleted(${order.ID})">Als abgeholt markieren</button>
-                    ${!order.bezahlt ? `<button class="action-btn payment-btn" onclick="markAsPaid(${order.ID})">Als bezahlt markieren</button>` : ''}
+                    <button class="action-btn complete-btn" onclick="markAsCompleted(${firstOrderId})">Als abgeholt markieren</button>
+                    ${!order.bezahlt ? `<button class="action-btn payment-btn" onclick="markAsPaid(${firstOrderId})">Als bezahlt markieren</button>` : ''}
                 </td>
             `;
 
@@ -323,7 +361,7 @@
         const tableBody = document.querySelector('#completedOrdersTable tbody');
 
         if (!orders || orders.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="7" class="empty-table">Keine abgeschlossenen Bestellungen vorhanden</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" class="empty-table">Keine abgeschlossenen Bestellungen vorhanden</td></tr>';
             return;
         }
 
@@ -360,11 +398,25 @@
                 ? '<span class="status status-paid">Ja</span>'
                 : '<span class="status status-pending">Nein</span>';
 
+            // Für die Detailansicht der Bestellungen - mit Sicherheitsprüfungen
+            const gerichte = order.gerichtListe ? order.gerichtListe.split(', ') : [];
+            const mengen = order.mengenListe ? order.mengenListe.split(', ') : [];
+
+            // Erstellen der Detailansicht mit jedem Gericht und der entsprechenden Menge
+            let detailsHTML = '<div class="order-details">';
+            for (let i = 0; i < gerichte.length; i++) {
+                detailsHTML += `
+                    <div class="order-item">
+                        <span class="order-item-name">${gerichte[i]}</span>
+                        <span class="order-item-quantity">${i < mengen.length ? mengen[i] : '1'}x</span>
+                    </div>
+                `;
+            }
+            detailsHTML += '</div>';
+
             row.innerHTML = `
-                <td>${order.ID}</td>
+                <td>${detailsHTML}</td>
                 <td>${order.userName}</td>
-                <td>${order.gerichtName}</td>
-                <td>${order.menge}</td>
                 <td>${formattedOrderDate}</td>
                 <td>${formattedPickupDate}</td>
                 <td>${paymentStatus}</td>

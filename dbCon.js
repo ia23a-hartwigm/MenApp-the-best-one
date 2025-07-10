@@ -143,14 +143,22 @@ async function getWarenkorbByUser (userId) {
 async function getActiveOrders() {
     try {
         return await executeQuery(`
-            SELECT b.ID, b.menge, b.bestelltAm, b.bezahlt, 
-                   g.Name as gerichtName, 
-                   u.Name as userName 
+            SELECT 
+                b.userID, 
+                MAX(b.bestelltAm) as bestelltAm, 
+                b.bezahlt, 
+                u.Name as userName,
+                DATE(b.bestelltAm) as bestellDatum,
+                GROUP_CONCAT(g.Name SEPARATOR ', ') as gerichtListe,
+                GROUP_CONCAT(b.menge SEPARATOR ', ') as mengenListe,
+                GROUP_CONCAT(b.ID SEPARATOR ', ') as bestellIDs,
+                GROUP_CONCAT(g.ID SEPARATOR ', ') as gerichtIDs
             FROM bestellungen b
             JOIN gerichte g ON b.gerichtID = g.ID
             JOIN users u ON b.userID = u.ID
             WHERE b.abgeholt = 0
-            ORDER BY b.bestelltAm DESC
+            GROUP BY b.userID, DATE(b.bestelltAm), b.bezahlt, u.Name
+            ORDER BY MAX(b.bestelltAm) DESC
         `);
     } catch (error) {
         console.error('Error fetching active orders:', error);
@@ -162,14 +170,24 @@ async function getActiveOrders() {
 async function getCompletedOrders() {
     try {
         return await executeQuery(`
-            SELECT b.ID, b.menge, b.bestelltAm, b.abgeholtAm, b.bezahlt, b.bezahltAm,
-                   g.Name as gerichtName, 
-                   u.Name as userName 
+            SELECT 
+                b.userID, 
+                MAX(b.bestelltAm) as bestelltAm, 
+                MAX(b.abgeholtAm) as abgeholtAm, 
+                b.bezahlt, 
+                MAX(b.bezahltAm) as bezahltAm,
+                u.Name as userName,
+                DATE(b.bestelltAm) as bestellDatum,
+                GROUP_CONCAT(g.Name SEPARATOR ', ') as gerichtListe,
+                GROUP_CONCAT(b.menge SEPARATOR ', ') as mengenListe,
+                GROUP_CONCAT(b.ID SEPARATOR ', ') as bestellIDs,
+                GROUP_CONCAT(g.ID SEPARATOR ', ') as gerichtIDs
             FROM bestellungen b
             JOIN gerichte g ON b.gerichtID = g.ID
             JOIN users u ON b.userID = u.ID
             WHERE b.abgeholt = 1
-            ORDER BY b.abgeholtAm DESC
+            GROUP BY b.userID, DATE(b.bestelltAm), b.bezahlt, u.Name
+            ORDER BY MAX(b.abgeholtAm) DESC
             LIMIT 100
         `);
     } catch (error) {
@@ -182,9 +200,24 @@ async function getCompletedOrders() {
 async function markOrderAsCompleted(orderId) {
     try {
         const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+        // Alle Bestellungen mit derselben Benutzer-ID und demselben Datum markieren
+        // Zuerst die Bestellung abrufen, um Benutzer-ID und Datum zu ermitteln
+        const orderResult = await executeQuery(
+            'SELECT userID, DATE(bestelltAm) as bestellDatum FROM bestellungen WHERE ID = ?',
+            [orderId]
+        );
+
+        if (!orderResult || orderResult.length === 0) {
+            return { success: false };
+        }
+
+        const { userID, bestellDatum } = orderResult[0];
+
+        // Dann alle Bestellungen mit derselben Benutzer-ID und demselben Datum aktualisieren
         const result = await executeQuery(
-            'UPDATE bestellungen SET abgeholt = 1, abgeholtAm = ? WHERE ID = ?',
-            [now, orderId]
+            'UPDATE bestellungen SET abgeholt = 1, abgeholtAm = ? WHERE userID = ? AND DATE(bestelltAm) = ?',
+            [now, userID, bestellDatum]
         );
 
         return { success: result.affectedRows > 0 };
@@ -198,9 +231,24 @@ async function markOrderAsCompleted(orderId) {
 async function markOrderAsPaid(orderId) {
     try {
         const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+        // Alle Bestellungen mit derselben Benutzer-ID und demselben Datum markieren
+        // Zuerst die Bestellung abrufen, um Benutzer-ID und Datum zu ermitteln
+        const orderResult = await executeQuery(
+            'SELECT userID, DATE(bestelltAm) as bestellDatum FROM bestellungen WHERE ID = ?',
+            [orderId]
+        );
+
+        if (!orderResult || orderResult.length === 0) {
+            return { success: false };
+        }
+
+        const { userID, bestellDatum } = orderResult[0];
+
+        // Dann alle Bestellungen mit derselben Benutzer-ID und demselben Datum aktualisieren
         const result = await executeQuery(
-            'UPDATE bestellungen SET bezahlt = 1, bezahltAm = ? WHERE ID = ?',
-            [now, orderId]
+            'UPDATE bestellungen SET bezahlt = 1, bezahltAm = ? WHERE userID = ? AND DATE(bestelltAm) = ?',
+            [now, userID, bestellDatum]
         );
 
         return { success: result.affectedRows > 0 };
@@ -214,11 +262,17 @@ async function markOrderAsPaid(orderId) {
 async function getAktiveBestellungenByUser(userId) {
     try {
         return await executeQuery(`
-            SELECT g.Name AS gerichtName, b.menge, b.bestelltAm, b.bezahlt 
+            SELECT 
+                DATE(b.bestelltAm) as bestellDatum,
+                MAX(b.bestelltAm) as bestelltAm, 
+                b.bezahlt,
+                GROUP_CONCAT(g.Name SEPARATOR ', ') as gerichtListe,
+                GROUP_CONCAT(b.menge SEPARATOR ', ') as mengenListe
             FROM bestellungen b 
             JOIN gerichte g ON g.ID = b.gerichtID 
             WHERE b.userID = ? AND b.abgeholt = 0
-            ORDER BY b.bestelltAm DESC
+            GROUP BY DATE(b.bestelltAm), b.bezahlt
+            ORDER BY MAX(b.bestelltAm) DESC
         `, [userId]);
     } catch (error) {
         console.error('Error fetching active orders for user:', error);
@@ -230,11 +284,16 @@ async function getAktiveBestellungenByUser(userId) {
 async function getAbgeschlosseneBestellungenByUser(userId) {
     try {
         return await executeQuery(`
-            SELECT g.Name AS gerichtName, b.menge, b.abgeholtAm
+            SELECT 
+                DATE(b.bestelltAm) as bestellDatum,
+                MAX(b.abgeholtAm) as abgeholtAm,
+                GROUP_CONCAT(g.Name SEPARATOR ', ') as gerichtListe,
+                GROUP_CONCAT(b.menge SEPARATOR ', ') as mengenListe
             FROM bestellungen b 
             JOIN gerichte g ON g.ID = b.gerichtID 
             WHERE b.userID = ? AND b.abgeholt = 1
-            ORDER BY b.abgeholtAm DESC
+            GROUP BY DATE(b.bestelltAm)
+            ORDER BY MAX(b.abgeholtAm) DESC
         `, [userId]);
     } catch (error) {
         console.error('Error fetching completed orders for user:', error);
