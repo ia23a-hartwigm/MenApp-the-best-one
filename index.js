@@ -660,3 +660,157 @@ app.get('/api/bestellungen', async (req, res) => {
         res.status(500).json({ success: false, message: 'Serverfehler beim Abrufen des Warenkorbs' });
     }
 });
+
+// API-Route zum Abrufen aller Admin-Benutzer
+app.get('/api/admin/users', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Nicht eingeloggt' });
+    }
+
+    try {
+        // Prüfen, ob der Benutzer Admin ist
+        const user = await dbCon.getUserById(req.session.userId);
+        if (!user || user.IsAdmin !== 1) {
+            return res.status(403).json({ success: false, error: 'Keine Admin-Berechtigung' });
+        }
+
+        // Admin-Benutzer aus der Datenbank abrufen
+        const adminUsers = await dbCon.getAdminUsers();
+        res.json(adminUsers);
+    } catch (error) {
+        console.error('Fehler beim Abrufen der Admin-Benutzer:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Serverfehler beim Abrufen der Admin-Benutzer'
+        });
+    }
+});
+
+// API-Route zum Erstellen eines neuen Admin-Benutzers
+app.post('/api/admin/users', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Nicht eingeloggt' });
+    }
+
+    try {
+        // Prüfen, ob der Benutzer Admin ist
+        const user = await dbCon.getUserById(req.session.userId);
+        if (!user || user.IsAdmin !== 1) {
+            return res.status(403).json({ success: false, error: 'Keine Admin-Berechtigung' });
+        }
+
+        const { name, email, password } = req.body;
+
+        // Validierung der Eingaben
+        if (!name || !email || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Bitte geben Sie Namen, E-Mail und Passwort an'
+            });
+        }
+
+        // E-Mail-Format prüfen
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Bitte geben Sie eine gültige E-Mail-Adresse ein'
+            });
+        }
+
+        // Passwort hashen
+        const hashedPassword = hashPassword(password);
+
+        // Neuen Admin-Benutzer erstellen
+        await dbCon.createAdminUser(name, email, hashedPassword);
+
+        res.json({ success: true, message: 'Admin-Benutzer erfolgreich erstellt' });
+    } catch (error) {
+        console.error('Fehler beim Erstellen des Admin-Benutzers:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Serverfehler beim Erstellen des Admin-Benutzers'
+        });
+    }
+});
+
+// API-Route zum Ändern des eigenen Passworts
+app.post('/api/user/change-password', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, message: 'Nicht eingeloggt' });
+    }
+
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        // Validierung der Eingaben
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Bitte geben Sie das aktuelle und das neue Passwort an'
+            });
+        }
+
+        // Passwort-Richtlinien prüfen
+        const hasMinLength = newPassword.length >= 8;
+        const hasUpperCase = /[A-Z]/.test(newPassword);
+        const hasLowerCase = /[a-z]/.test(newPassword);
+        const hasNumbers = /[0-9]/.test(newPassword);
+
+        if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumbers) {
+            return res.status(400).json({
+                success: false,
+                message: 'Das neue Passwort erfüllt nicht die Sicherheitsanforderungen'
+            });
+        }
+
+        // Benutzer aus der Datenbank abrufen
+        const user = await dbCon.getUserById(req.session.userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'Benutzer nicht gefunden' });
+        }
+
+        // Aktuelles Passwort überprüfen
+        const hashedCurrentPassword = hashPassword(currentPassword);
+        if (user.Passwort !== hashedCurrentPassword) {
+            return res.status(401).json({ success: false, message: 'Aktuelles Passwort ist falsch' });
+        }
+
+        // Neues Passwort hashen und speichern
+        const hashedNewPassword = hashPassword(newPassword);
+        await dbCon.updateUserPassword(req.session.userId, hashedNewPassword);
+
+        res.json({ success: true, message: 'Passwort erfolgreich geändert' });
+    } catch (error) {
+        console.error('Fehler beim Ändern des Passworts:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Serverfehler beim Ändern des Passworts'
+        });
+    }
+});
+
+// API-Route zum Abrufen aller normalen Benutzer (keine Admins)
+app.get('/api/admin/regular-users', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: 'Nicht eingeloggt' });
+    }
+
+    try {
+        // Prüfen, ob der Benutzer Admin ist
+        const user = await dbCon.getUserById(req.session.userId);
+        if (!user || user.IsAdmin !== 1) {
+            return res.status(403).json({ success: false, error: 'Keine Admin-Berechtigung' });
+        }
+
+        // Alle Benutzer (ohne Admins) aus der Datenbank abrufen
+        const regularUsers = await dbCon.getRegularUsers();
+        res.json(regularUsers);
+    } catch (error) {
+        console.error('Fehler beim Abrufen der Benutzer:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Serverfehler beim Abrufen der Benutzer'
+        });
+    }
+});

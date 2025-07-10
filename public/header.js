@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <li><a href="/index.html">Speiseplan</a></li>
             <li><a href="/warenkorb.html">Warenkorb</a></li>
             <li><a href="/login/login.html">Login</a></li>
+            <li id="passwordLink" style="display: none;"><a href="/change-password.html">Passwort ändern</a></li>
             <li id="adminLink" style="display: none;"><a href="/admin">Admin</a></li>
         </ul>
     </nav>`;
@@ -61,6 +62,9 @@ async function checkLoginStatus() {
             const userNameElement = document.getElementById('userName');
 
             userInfo.style.display = 'inline-block';
+
+            // Passwort-Änderungslink anzeigen
+            document.getElementById('passwordLink').style.display = 'block';
 
             // Benutzernamen abrufen
             try {

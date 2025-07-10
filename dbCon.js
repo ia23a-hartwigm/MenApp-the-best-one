@@ -432,6 +432,87 @@ async function deleteMenu(menuId) {
     }
 }
 
+// Funktion zum Abrufen aller Admin-Benutzer
+async function getAdminUsers() {
+    try {
+        return await executeQuery(
+            'SELECT ID, Name, Email FROM users WHERE IsAdmin = 1 ORDER BY ID'
+        );
+    } catch (error) {
+        console.error('Error fetching admin users:', error);
+        throw error;
+    }
+}
+
+// Funktion zum Erstellen eines neuen Admin-Benutzers
+async function createAdminUser(name, email, password) {
+    try {
+        // Prüfen, ob die E-Mail bereits existiert
+        const existingUser = await getUserByEmail(email);
+        if (existingUser) {
+            throw new Error('Ein Benutzer mit dieser E-Mail existiert bereits');
+        }
+
+        return await executeQuery(
+            'INSERT INTO users (Name, Email, Passwort, IsAdmin) VALUES (?, ?, ?, 1)',
+            [name, email, password]
+        );
+    } catch (error) {
+        console.error('Error creating admin user:', error);
+        throw error;
+    }
+}
+
+// Funktion zum Aktualisieren des Benutzerpassworts
+async function updateUserPassword(userId, newPassword) {
+    try {
+        return await executeQuery(
+            'UPDATE users SET Passwort = ? WHERE ID = ?',
+            [newPassword, userId]
+        );
+    } catch (error) {
+        console.error('Error updating user password:', error);
+        throw error;
+    }
+}
+
+// Funktion zum Abrufen aller normalen Benutzer (keine Admins)
+async function getRegularUsers() {
+    try {
+        return await executeQuery(
+            'SELECT ID, Name, Email FROM users WHERE IsAdmin = 0 ORDER BY ID'
+        );
+    } catch (error) {
+        console.error('Error fetching regular users:', error);
+        throw error;
+    }
+}
+
+// Funktion zum Befördern eines Benutzers zum Admin
+async function promoteUserToAdmin(userId) {
+    try {
+        // Prüfen, ob der Benutzer existiert
+        const user = await getUserById(userId);
+        if (!user) {
+            throw new Error('Benutzer nicht gefunden');
+        }
+
+        // Prüfen, ob der Benutzer bereits Admin ist
+        if (user.IsAdmin === 1) {
+            throw new Error('Benutzer ist bereits Administrator');
+        }
+
+        // Benutzer zum Admin befördern
+        return await executeQuery(
+            'UPDATE users SET IsAdmin = 1 WHERE ID = ?',
+            [userId]
+        );
+    } catch (error) {
+        console.error('Error promoting user to admin:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     getTest,
     getMenu,
@@ -453,7 +534,15 @@ module.exports = {
     createBestellungFromWarenkorb,
     createMenu,
     updateMenu,
-    deleteMenu
+    deleteMenu,
+    // Admin-Benutzerverwaltung
+    getAdminUsers,
+    createAdminUser,
+    // Funktionen für die Beförderung zum Admin
+    getRegularUsers,
+    promoteUserToAdmin,
+    // Funktion für Passwortänderung
+    updateUserPassword
 };
 
 async function executeQuery(sql, params = []) {
