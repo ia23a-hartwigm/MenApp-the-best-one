@@ -157,7 +157,7 @@ async function getActiveOrders() {
             JOIN gerichte g ON b.gerichtID = g.ID
             JOIN users u ON b.userID = u.ID
             WHERE b.abgeholt = 0
-            GROUP BY b.userID, DATE(b.bestelltAm), b.bezahlt, u.Name
+            GROUP BY b.userID, b.bestelltAm, b.bezahlt, u.Name
             ORDER BY MAX(b.bestelltAm) DESC
         `);
     } catch (error) {
@@ -186,7 +186,7 @@ async function getCompletedOrders() {
             JOIN gerichte g ON b.gerichtID = g.ID
             JOIN users u ON b.userID = u.ID
             WHERE b.abgeholt = 1
-            GROUP BY b.userID, DATE(b.bestelltAm), b.bezahlt, u.Name
+            GROUP BY b.userID, b.bestelltAm, b.bezahlt, u.Name
             ORDER BY MAX(b.abgeholtAm) DESC
             LIMIT 100
         `);
@@ -202,9 +202,9 @@ async function markOrderAsCompleted(orderId) {
         const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
         // Alle Bestellungen mit derselben Benutzer-ID und demselben Datum markieren
-        // Zuerst die Bestellung abrufen, um Benutzer-ID und Datum zu ermitteln
+        // Zuerst die Bestellung abrufen, um Benutzer-ID und genauen Zeitstempel zu ermitteln
         const orderResult = await executeQuery(
-            'SELECT userID, DATE(bestelltAm) as bestellDatum FROM bestellungen WHERE ID = ?',
+            'SELECT userID, bestelltAm FROM bestellungen WHERE ID = ?',
             [orderId]
         );
 
@@ -212,12 +212,12 @@ async function markOrderAsCompleted(orderId) {
             return { success: false };
         }
 
-        const { userID, bestellDatum } = orderResult[0];
+        const { userID, bestelltAm } = orderResult[0];
 
-        // Dann alle Bestellungen mit derselben Benutzer-ID und demselben Datum aktualisieren
+        // Dann alle Bestellungen mit derselben Benutzer-ID und demselben exakten Zeitstempel aktualisieren
         const result = await executeQuery(
-            'UPDATE bestellungen SET abgeholt = 1, abgeholtAm = ? WHERE userID = ? AND DATE(bestelltAm) = ?',
-            [now, userID, bestellDatum]
+            'UPDATE bestellungen SET abgeholt = 1, abgeholtAm = ? WHERE userID = ? AND bestelltAm = ?',
+            [now, userID, bestelltAm]
         );
 
         return { success: result.affectedRows > 0 };
@@ -233,9 +233,9 @@ async function markOrderAsPaid(orderId) {
         const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
         // Alle Bestellungen mit derselben Benutzer-ID und demselben Datum markieren
-        // Zuerst die Bestellung abrufen, um Benutzer-ID und Datum zu ermitteln
+        // Zuerst die Bestellung abrufen, um Benutzer-ID und genauen Zeitstempel zu ermitteln
         const orderResult = await executeQuery(
-            'SELECT userID, DATE(bestelltAm) as bestellDatum FROM bestellungen WHERE ID = ?',
+            'SELECT userID, bestelltAm FROM bestellungen WHERE ID = ?',
             [orderId]
         );
 
@@ -243,12 +243,12 @@ async function markOrderAsPaid(orderId) {
             return { success: false };
         }
 
-        const { userID, bestellDatum } = orderResult[0];
+        const { userID, bestelltAm } = orderResult[0];
 
-        // Dann alle Bestellungen mit derselben Benutzer-ID und demselben Datum aktualisieren
+        // Dann alle Bestellungen mit derselben Benutzer-ID und demselben exakten Zeitstempel aktualisieren
         const result = await executeQuery(
-            'UPDATE bestellungen SET bezahlt = 1, bezahltAm = ? WHERE userID = ? AND DATE(bestelltAm) = ?',
-            [now, userID, bestellDatum]
+            'UPDATE bestellungen SET bezahlt = 1, bezahltAm = ? WHERE userID = ? AND bestelltAm = ?',
+            [now, userID, bestelltAm]
         );
 
         return { success: result.affectedRows > 0 };
@@ -271,7 +271,7 @@ async function getAktiveBestellungenByUser(userId) {
             FROM bestellungen b 
             JOIN gerichte g ON g.ID = b.gerichtID 
             WHERE b.userID = ? AND b.abgeholt = 0
-            GROUP BY DATE(b.bestelltAm), b.bezahlt
+            GROUP BY b.bestelltAm, b.bezahlt
             ORDER BY MAX(b.bestelltAm) DESC
         `, [userId]);
     } catch (error) {
@@ -292,7 +292,7 @@ async function getAbgeschlosseneBestellungenByUser(userId) {
             FROM bestellungen b 
             JOIN gerichte g ON g.ID = b.gerichtID 
             WHERE b.userID = ? AND b.abgeholt = 1
-            GROUP BY DATE(b.bestelltAm)
+            GROUP BY b.bestelltAm
             ORDER BY MAX(b.abgeholtAm) DESC
         `, [userId]);
     } catch (error) {

@@ -612,7 +612,6 @@ app.get('/api/bestellungen/aktiv', async (req, res) => {
     if (!req.session.userId) {
         return res.status(401).json({ success: false, message: 'Nicht eingeloggt' });
     }
-
     try {
         const userId = req.session.userId;
         const result = await dbCon.getAktiveBestellungenByUser(userId);
