@@ -5,3 +5,4 @@
 - Der Code ist vollständig implementiert und wurde lokal getestet.
 - Der Code wurde reviewt (Pull Request, 4-Augen-Prinzip).
 - Die Funktion wurde im Review durch das Team abgenommen.
+- Die geleistete Arbeit ist in der Dokumentation nachvollziehbar festgehalten.
