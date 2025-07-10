@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Bestellungsverwaltung - Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../style.css">
+    <script src="../header.js"></script>
+    <style>
+        .orders-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #0066cc;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            background-color: #0066cc;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: #0066cc;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #f1f7ff;
+        }
+
+        .empty-table {
+            text-align: center;
+            padding: 30px;
+            color: #6c757d;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 5px;
+        }
+
+        .complete-btn {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .complete-btn:hover {
+            background-color: #218838;
+        }
+
+        .payment-btn {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .payment-btn:hover {
+            background-color: #e0a800;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .status-completed {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .status-paid {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .nav-tabs {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .nav-tabs li {
+            margin-right: 5px;
+        }
+
+        .nav-tabs a {
+            display: block;
+            padding: 10px 15px;
+            color: #495057;
+            text-decoration: none;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-bottom: none;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+        }
+
+        .nav-tabs a.active {
+            color: #0066cc;
+            background-color: #fff;
+            border-bottom-color: #fff;
+            font-weight: bold;
+        }
+
+        .admin-menu {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .admin-menu a {
+            display: block;
+            padding: 10px 20px;
+            background-color: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .admin-menu a:hover {
+            background-color: #0055aa;
+        }
+
+        .admin-menu a.active {
+            background-color: #004488;
+        }
+
+        .order-details {
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: #495057;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .order-item-name {
+            flex: 1;
+        }
+
+        .order-item-quantity {
+            margin-left: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-content">
+    <h1>Bestellungsverwaltung</h1>
+
+    <div class="admin-menu">
+        <a href="/admin/index.html">Menüs verwalten</a>
+        <a href="/admin/orders.html" class="active">Bestellungen verwalten</a>
+        <a href="/admin/admins.html">Admins verwalten</a>
+    </div>
+
+    <div class="orders-container">
+        <h2 class="section-header">Aktive Bestellungen</h2>
+        <table id="activeOrdersTable">
+            <thead>
+                <tr>
+                    <th>Bestellung</th>
+                    <th>Benutzer</th>
+                    <th>Bestellt am</th>
+                    <th>Status</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- JavaScript befüllt hier die aktiven Bestellungen -->
+                <tr>
+                    <td colspan="5" class="empty-table">Lade Bestellungen...</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2 class="section-header">Abgeschlossene Bestellungen</h2>
+        <table id="completedOrdersTable">
+            <thead>
+                <tr>
+                    <th>Bestellung</th>
+                    <th>Benutzer</th>
+                    <th>Bestellt am</th>
+                    <th>Abgeholt am</th>
+                    <th>Bezahlt</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- JavaScript befüllt hier die abgeschlossenen Bestellungen -->
+                <tr>
+                    <td colspan="5" class="empty-table">Lade Bestellungen...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Bestellungen beim Laden der Seite abrufen
+    document.addEventListener('DOMContentLoaded', () => {
+        loadOrders();
+    });
+
+    // Aktive und abgeschlossene Bestellungen abrufen
+    async function loadOrders() {
+        try {
+            // Prüfen, ob der Benutzer als Admin angemeldet ist
+            const adminResponse = await fetch('/api/user/isAdmin', { credentials: 'include' });
+            const adminData = await adminResponse.json();
+
+            if (!adminData.success || !adminData.isAdmin) {
+                window.location.href = '/index.html';
+                return;
+            }
+
+            // Aktive Bestellungen abrufen
+            const activeOrdersResponse = await fetch('/api/admin/orders/active', { credentials: 'include' });
+            if (!activeOrdersResponse.ok) {
+                throw new Error('Fehler beim Abrufen aktiver Bestellungen');
+            }
+            const activeOrders = await activeOrdersResponse.json();
+
+            // Abgeschlossene Bestellungen abrufen
+            const completedOrdersResponse = await fetch('/api/admin/orders/completed', { credentials: 'include' });
+            if (!completedOrdersResponse.ok) {
+                throw new Error('Fehler beim Abrufen abgeschlossener Bestellungen');
+            }
+            const completedOrders = await completedOrdersResponse.json();
+
+            // Tabellen mit den Daten befüllen
+            displayActiveOrders(activeOrders);
+            displayCompletedOrders(completedOrders);
+
+        } catch (error) {
+            console.error('Fehler beim Laden der Bestellungen:', error);
+            alert('Fehler beim Laden der Bestellungen: ' + error.message);
+        }
+    }
+
+    // Aktive Bestellungen in der Tabelle anzeigen
+    function displayActiveOrders(orders) {
+        const tableBody = document.querySelector('#activeOrdersTable tbody');
+
+        if (!orders || orders.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="empty-table">Keine aktiven Bestellungen vorhanden</td></tr>';
+            return;
+        }
+
+        tableBody.innerHTML = '';
+
+        orders.forEach(order => {
+            const row = document.createElement('tr');
+
+            // Datum formatieren
+            const orderDate = new Date(order.bestelltAm);
+            const formattedDate = orderDate.toLocaleString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Status-Label erstellen
+            const statusLabel = order.bezahlt
+                ? '<span class="status status-paid">Bezahlt</span>'
+                : '<span class="status status-pending">Offen</span>';
+
+            // Für die Detailansicht der Bestellungen - mit Sicherheitsprüfungen
+            const gerichte = order.gerichtListe ? order.gerichtListe.split(', ') : [];
+            const mengen = order.mengenListe ? order.mengenListe.split(', ') : [];
+
+            // Sicherstellen, dass bestellIDs ein String ist, bevor split aufgerufen wird
+            const bestellIDsStr = order.bestellIDs ? String(order.bestellIDs) : '';
+            const bestellIDs = bestellIDsStr.split(',');
+
+            // Erstellen der Detailansicht mit jedem Gericht und der entsprechenden Menge
+            let detailsHTML = '<div class="order-details">';
+            for (let i = 0; i < gerichte.length; i++) {
+                detailsHTML += `
+                    <div class="order-item">
+                        <span class="order-item-name">${gerichte[i]}</span>
+                        <span class="order-item-quantity">${i < mengen.length ? mengen[i] : '1'}x</span>
+                    </div>
+                `;
+            }
+            detailsHTML += '</div>';
+
+            // Wir verwenden die erste Bestellung-ID für die Aktionen
+            const firstOrderId = bestellIDs.length > 0 ? bestellIDs[0].trim() : '';
+
+            row.innerHTML = `
+                <td>${detailsHTML}</td>
+                <td>${order.userName}</td>
+                <td>${formattedDate}</td>
+                <td>${statusLabel}</td>
+                <td>
+                    <button class="action-btn complete-btn" onclick="markAsCompleted(${firstOrderId})">Als abgeholt markieren</button>
+                    ${!order.bezahlt ? `<button class="action-btn payment-btn" onclick="markAsPaid(${firstOrderId})">Als bezahlt markieren</button>` : ''}
+                </td>
+            `;
+
+            tableBody.appendChild(row);
+        });
+    }
+
+    // Abgeschlossene Bestellungen in der Tabelle anzeigen
+    function displayCompletedOrders(orders) {
+        const tableBody = document.querySelector('#completedOrdersTable tbody');
+
+        if (!orders || orders.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="empty-table">Keine abgeschlossenen Bestellungen vorhanden</td></tr>';
+            return;
+        }
+
+        tableBody.innerHTML = '';
+
+        orders.forEach(order => {
+            const row = document.createElement('tr');
+
+            // Bestelldatum formatieren
+            const orderDate = new Date(order.bestelltAm);
+            const formattedOrderDate = orderDate.toLocaleString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Abholdatum formatieren
+            let formattedPickupDate = '-';
+            if (order.abgeholtAm) {
+                const pickupDate = new Date(order.abgeholtAm);
+                formattedPickupDate = pickupDate.toLocaleString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            // Bezahlstatus anzeigen
+            const paymentStatus = order.bezahlt
+                ? '<span class="status status-paid">Ja</span>'
+                : '<span class="status status-pending">Nein</span>';
+
+            // Für die Detailansicht der Bestellungen - mit Sicherheitsprüfungen
+            const gerichte = order.gerichtListe ? order.gerichtListe.split(', ') : [];
+            const mengen = order.mengenListe ? order.mengenListe.split(', ') : [];
+
+            // Erstellen der Detailansicht mit jedem Gericht und der entsprechenden Menge
+            let detailsHTML = '<div class="order-details">';
+            for (let i = 0; i < gerichte.length; i++) {
+                detailsHTML += `
+                    <div class="order-item">
+                        <span class="order-item-name">${gerichte[i]}</span>
+                        <span class="order-item-quantity">${i < mengen.length ? mengen[i] : '1'}x</span>
+                    </div>
+                `;
+            }
+            detailsHTML += '</div>';
+
+            row.innerHTML = `
+                <td>${detailsHTML}</td>
+                <td>${order.userName}</td>
+                <td>${formattedOrderDate}</td>
+                <td>${formattedPickupDate}</td>
+                <td>${paymentStatus}</td>
+            `;
+
+            tableBody.appendChild(row);
+        });
+    }
+
+    // Bestellung als abgeholt markieren
+    async function markAsCompleted(orderId) {
+        if (!confirm('Bestellung als abgeholt markieren?')) return;
+
+        try {
+            const response = await fetch(`/api/admin/orders/${orderId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Fehler beim Markieren der Bestellung als abgeholt');
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Bestellung wurde als abgeholt markiert!');
+                loadOrders(); // Bestellungen neu laden
+            } else {
+                throw new Error(result.error || 'Unbekannter Fehler beim Aktualisieren der Bestellung');
+            }
+        } catch (error) {
+            console.error('Fehler beim Aktualisieren der Bestellung:', error);
+            alert(`Fehler: ${error.message}`);
+        }
+    }
+
+    // Bestellung als bezahlt markieren
+    async function markAsPaid(orderId) {
+        if (!confirm('Bestellung als bezahlt markieren?')) return;
+
+        try {
+            const response = await fetch(`/api/admin/orders/${orderId}/pay`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Fehler beim Markieren der Bestellung als bezahlt');
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Bestellung wurde als bezahlt markiert!');
+                loadOrders(); // Bestellungen neu laden
+            } else {
+                throw new Error(result.error || 'Unbekannter Fehler beim Aktualisieren der Bestellung');
+            }
+        } catch (error) {
+            console.error('Fehler beim Aktualisieren der Bestellung:', error);
+            alert(`Fehler: ${error.message}`);
+        }
+    }
+</script>
+</body>
+</html>
