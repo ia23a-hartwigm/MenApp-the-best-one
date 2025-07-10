@@ -9,11 +9,10 @@ Choosing the IDE is at the developer’s discretion.
 
 MySQl Server is set up by Suter.
 
-Public WebServer will be done by Matthias.
 
 ## Frontend
 
-In the Frontend, we use Angular
+In the Frontend, we use JavaScript, html and css.
 
 ## Backend
 
